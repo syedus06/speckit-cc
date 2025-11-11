@@ -9,37 +9,75 @@ interface Project {
   path: string;
 }
 
-// Default Gemini spec content
-const defaultGeminiSpec = `
-{
-  "model": {
-    "modelName": "gemini-1.5-pro-latest",
-    "temperature": 0.9,
-    "topK": 1,
-    "topP": 1,
-    "maxOutputTokens": 8192
-  },
-  "safety": [
-    {
-      "category": "HARM_CATEGORY_HARASSMENT",
-      "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+// Default agent configurations based on spec-kit documentation
+const agentSpecs: { [key: string]: string } = {
+  'gemini.spec': `{
+    "model": {
+      "modelName": "gemini-1.5-pro-latest",
+      "temperature": 0.9,
+      "topK": 1,
+      "topP": 1,
+      "maxOutputTokens": 8192
     },
-    {
-      "category": "HARM_CATEGORY_HATE_SPEECH",
-      "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+    "safety": [
+      {
+        "category": "HARM_CATEGORY_HARASSMENT",
+        "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+      },
+      {
+        "category": "HARM_CATEGORY_HATE_SPEECH",
+        "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+      },
+      {
+        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+        "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+      },
+      {
+        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+        "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+      }
+    ],
+    "preamble": ""
+  }`,
+  'claude.spec': `{
+    "model": {
+      "modelName": "claude-2.1",
+      "temperature": 1,
+      "topK": 250,
+      "topP": 0.999,
+      "maxOutputTokens": 4096
     },
-    {
-      "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-      "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+    "preamble": ""
+  }`,
+  'openai.spec': `{
+    "model": {
+      "modelName": "gpt-4-1106-preview",
+      "temperature": 0,
+      "topP": 1,
+      "maxOutputTokens": 4096
     },
-    {
-      "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-      "threshold": "BLOCK_MEDIUM_AND_ABOVE"
-    }
-  ],
-  "preamble": ""
-}
-`;
+    "preamble": ""
+  }`,
+  'cursor.spec': `{
+    "model": {
+      "modelName": "gpt-4",
+      "temperature": 0.3,
+      "topP": 1,
+      "maxOutputTokens": 4096
+    },
+    "preamble": ""
+  }`,
+  'specify.spec': `{
+    "model": {
+      "modelName": "gemini-1.0-pro",
+      "temperature": 0.5,
+      "topP": 1,
+      "topK": 0,
+      "maxOutputTokens": 4096
+    },
+    "preamble": "You are an expert software developer who writes concise, elegant, and efficient code.\nYour task is to take a natural language description of a software feature and translate it into a detailed, actionable, and complete software specification. The specification should be written in a way that is easy for another developer to understand and implement."
+  }`
+};
 
 async function readProjects(): Promise<Project[]> {
     const projectsFilePath = path.join(process.cwd(), 'projects.json');
@@ -91,9 +129,8 @@ export async function addProject(prevState: any, formData: FormData) {
 
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        // This is the key change: prompt the user to initialize.
         return { 
-            message: `Directory \"${path.basename(projectPath)}\" is not a spec-kit project. Would you like to initialize it?`, 
+            message: `Directory \"${path.basename(projectPath)}\" is not a spec-kit project. Would you like to initialize it with all standard agents?`, 
             requiresInit: true, 
             projectPath 
         };
@@ -105,11 +142,15 @@ export async function addProject(prevState: any, formData: FormData) {
 
 export async function initializeProject(prevState: any, formData: FormData) {
     const projectPath = formData.get('path') as string;
+    const specifyDir = path.join(projectPath, 'specify');
 
     try {
-        await fs.mkdir(path.join(projectPath, 'specify'));
-        await fs.mkdir(path.join(projectPath, 'specs'));
-        await fs.writeFile(path.join(projectPath, 'specify', 'gemini.spec'), defaultGeminiSpec);
+        await fs.mkdir(specifyDir, { recursive: true });
+        await fs.mkdir(path.join(projectPath, 'specs'), { recursive: true });
+
+        for (const [fileName, content] of Object.entries(agentSpecs)) {
+            await fs.writeFile(path.join(specifyDir, fileName), content);
+        }
 
         const projects = await readProjects();
         const newProject: Project = {
@@ -119,7 +160,7 @@ export async function initializeProject(prevState: any, formData: FormData) {
         await writeProjects([...projects, newProject]);
 
         revalidatePath('/dashboard');
-        return { message: `Project "${newProject.name}" initialized and added successfully!`, error: false };
+        return { message: `Project "${newProject.name}" initialized successfully with all agents!`, error: false };
 
     } catch (error) {
         console.error('Error initializing project:', error);
