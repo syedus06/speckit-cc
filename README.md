@@ -1,36 +1,277 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Spec Workflow MCP
 
-## Getting Started
+[![npm version](https://img.shields.io/npm/v/@pimzino/spec-workflow-mcp)](https://www.npmjs.com/package/@pimzino/spec-workflow-mcp)
+[![VSCode Extension](https://badgen.net/vs-marketplace/v/Pimzino.spec-workflow-mcp)](https://marketplace.visualstudio.com/items?itemName=Pimzino.spec-workflow-mcp)
 
-First, run the development server:
+A Model Context Protocol (MCP) server for structured spec-driven development with real-time dashboard and VSCode extension.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## ☕ Support This Project
+
+<a href="https://buymeacoffee.com/Pimzino" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
+
+## 📺 Showcase
+
+### 🔄 Approval System in Action
+<a href="https://www.youtube.com/watch?v=C-uEa3mfxd0" target="_blank">
+  <img src="https://img.youtube.com/vi/C-uEa3mfxd0/maxresdefault.jpg" alt="Approval System Demo" width="600">
+</a>
+
+*See how the approval system works: create documents, request approval through the dashboard, provide feedback, and track revisions.*
+
+### 📊 Dashboard & Spec Management
+<a href="https://www.youtube.com/watch?v=g9qfvjLUWf8" target="_blank">
+  <img src="https://img.youtube.com/vi/g9qfvjLUWf8/maxresdefault.jpg" alt="Dashboard Demo" width="600">
+</a>
+
+*Explore the real-time dashboard: view specs, track progress, navigate documents, and monitor your development workflow.*
+
+## ✨ Key Features
+
+- **Structured Development Workflow** - Sequential spec creation (Requirements → Design → Tasks)
+- **Real-Time Web Dashboard** - Monitor specs, tasks, and progress with live updates
+- **VSCode Extension** - Integrated sidebar dashboard for VSCode users
+- **Approval Workflow** - Complete approval process with revisions
+- **Task Progress Tracking** - Visual progress bars and detailed status
+- **Implementation Logs** - Searchable logs of all task implementations with code statistics
+- **Multi-Language Support** - Available in 11 languages
+
+## 🌍 Supported Languages
+
+🇺🇸 English • 🇯🇵 日本語 • 🇨🇳 中文 • 🇪🇸 Español • 🇧🇷 Português • 🇩🇪 Deutsch • 🇫🇷 Français • 🇷🇺 Русский • 🇮🇹 Italiano • 🇰🇷 한국어 • 🇸🇦 العربية
+
+## 🚀 Quick Start
+
+### Step 1: Add to your AI tool
+
+Add to your MCP configuration (see client-specific setup below):
+
+```json
+{
+  "mcpServers": {
+    "spec-workflow": {
+      "command": "npx",
+      "args": ["-y", "@pimzino/spec-workflow-mcp@latest", "/path/to/your/project"]
+    }
+  }
+}
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Step 2: Choose your interface
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**Option A: Web Dashboard** (Required for CLI users)
+Start the dashboard (runs on port 5000 by default):
+```bash
+npx -y @pimzino/spec-workflow-mcp@latest --dashboard
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The dashboard will be accessible at: http://localhost:5000
 
-## Learn More
+> **Note:** Only one dashboard instance is needed. All your projects will connect to the same dashboard.
 
-To learn more about Next.js, take a look at the following resources:
+**Option B: VSCode Extension** (Recommended for VSCode users)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Install [Spec Workflow MCP Extension](https://marketplace.visualstudio.com/items?itemName=Pimzino.spec-workflow-mcp) from the VSCode marketplace.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📝 How to Use
 
-## Deploy on Vercel
+Simply mention spec-workflow in your conversation:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **"Create a spec for user authentication"** - Creates complete spec workflow
+- **"List my specs"** - Shows all specs and their status
+- **"Execute task 1.2 in spec user-auth"** - Runs a specific task
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+[See more examples →](docs/PROMPTING-GUIDE.md)
+
+## 🔧 MCP Client Setup
+
+<details>
+<summary><strong>Augment Code</strong></summary>
+
+Configure in your Augment settings:
+```json
+{
+  "mcpServers": {
+    "spec-workflow": {
+      "command": "npx",
+      "args": ["-y", "@pimzino/spec-workflow-mcp@latest", "/path/to/your/project"]
+    }
+  }
+}
+```
+</details>
+
+<details>
+<summary><strong>Claude Code CLI</strong></summary>
+
+Add to your MCP configuration:
+```bash
+claude mcp add spec-workflow npx @pimzino/spec-workflow-mcp@latest -- /path/to/your/project
+```
+
+**Important Notes:**
+- The `-y` flag bypasses npm prompts for smoother installation
+- The `--` separator ensures the path is passed to the spec-workflow script, not to npx
+- Replace `/path/to/your/project` with your actual project directory path
+
+**Alternative for Windows (if the above doesn't work):**
+```bash
+claude mcp add spec-workflow cmd.exe /c "npx @pimzino/spec-workflow-mcp@latest /path/to/your/project"
+```
+</details>
+
+<details>
+<summary><strong>Claude Desktop</strong></summary>
+
+Add to `claude_desktop_config.json`:
+```json
+{
+  "mcpServers": {
+    "spec-workflow": {
+      "command": "npx",
+      "args": ["-y", "@pimzino/spec-workflow-mcp@latest", "/path/to/your/project"]
+    }
+  }
+}
+```
+
+> **Important:** Run the dashboard separately with `--dashboard` before starting the MCP server.
+
+</details>
+
+<details>
+<summary><strong>Cline/Claude Dev</strong></summary>
+
+Add to your MCP server configuration:
+```json
+{
+  "mcpServers": {
+    "spec-workflow": {
+      "command": "npx",
+      "args": ["-y", "@pimzino/spec-workflow-mcp@latest", "/path/to/your/project"]
+    }
+  }
+}
+```
+</details>
+
+<details>
+<summary><strong>Continue IDE Extension</strong></summary>
+
+Add to your Continue configuration:
+```json
+{
+  "mcpServers": {
+    "spec-workflow": {
+      "command": "npx",
+      "args": ["-y", "@pimzino/spec-workflow-mcp@latest", "/path/to/your/project"]
+    }
+  }
+}
+```
+</details>
+
+<details>
+<summary><strong>Cursor IDE</strong></summary>
+
+Add to your Cursor settings (`settings.json`):
+```json
+{
+  "mcpServers": {
+    "spec-workflow": {
+      "command": "npx",
+      "args": ["-y", "@pimzino/spec-workflow-mcp@latest", "/path/to/your/project"]
+    }
+  }
+}
+```
+</details>
+
+<details>
+<summary><strong>OpenCode</strong></summary>
+
+Add to your `opencode.json` configuration file:
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "spec-workflow": {
+      "type": "local",
+      "command": ["npx", "-y", "@pimzino/spec-workflow-mcp@latest", "/path/to/your/project"],
+      "enabled": true
+    }
+  }
+}
+```
+</details>
+
+## 🐳 Docker Deployment
+
+Run the dashboard in a Docker container for isolated deployment:
+
+```bash
+# Using Docker Compose (recommended)
+cd containers
+docker-compose up --build
+
+# Or using Docker CLI
+docker build -f containers/Dockerfile -t spec-workflow-mcp .
+docker run -p 5000:5000 -v "./workspace/.spec-workflow:/workspace/.spec-workflow:rw" spec-workflow-mcp
+```
+
+The dashboard will be available at: http://localhost:5000
+
+[See Docker setup guide →](containers/README.md)
+
+## 📚 Documentation
+
+- [Configuration Guide](docs/CONFIGURATION.md) - Command-line options, config files
+- [User Guide](docs/USER-GUIDE.md) - Comprehensive usage examples
+- [Workflow Process](docs/WORKFLOW.md) - Development workflow and best practices
+- [Interfaces Guide](docs/INTERFACES.md) - Dashboard and VSCode extension details
+- [Prompting Guide](docs/PROMPTING-GUIDE.md) - Advanced prompting examples
+- [Tools Reference](docs/TOOLS-REFERENCE.md) - Complete tools documentation
+- [Development](docs/DEVELOPMENT.md) - Contributing and development setup
+- [Troubleshooting](docs/TROUBLESHOOTING.md) - Common issues and solutions
+
+## 📁 Project Structure
+
+```
+your-project/
+  .spec-workflow/
+    approvals/
+    archive/
+    specs/
+    steering/
+    templates/
+    user-templates/
+    config.example.toml
+```
+
+## 🛠️ Development
+
+```bash
+# Install dependencies
+npm install
+
+# Build the project
+npm run build
+
+# Run in development mode
+npm run dev
+```
+
+[See development guide →](docs/DEVELOPMENT.md)
+
+## 📄 License
+
+GPL-3.0
+
+## ⭐ Star History
+
+<a href="https://www.star-history.com/#Pimzino/spec-workflow-mcp&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Pimzino/spec-workflow-mcp&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Pimzino/spec-workflow-mcp&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Pimzino/spec-workflow-mcp&type=Date" />
+ </picture>
+</a>
