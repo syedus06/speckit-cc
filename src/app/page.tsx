@@ -1,5 +1,6 @@
 import Button from "@/components/Button";
 import Link from "next/link";
+import WebSocketClient from "@/components/WebSocketClient";
 
 const Home = () => {
   return (
@@ -11,6 +12,7 @@ const Home = () => {
                 <Button size="lg">Get Started</Button>
             </Link>
         </div>
+        <WebSocketClient />
     </div>
   );
 };
