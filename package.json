@@ -25,6 +25,11 @@
     "test": "vitest",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:report": "playwright show-report",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -72,6 +77,7 @@
     "toml": "^3.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "@tailwindcss/typography": "^0.5.16",
     "@types/diff": "^5.0.3",
     "@types/node": "^22.18.1",
@@ -80,6 +86,7 @@
     "@types/ws": "^8.5.13",
     "@vitejs/plugin-react": "^4.3.3",
     "@vitest/coverage-v8": "^2.1.8",
+    "playwright": "^1.56.1",
     "rimraf": "^6.0.1",
     "tailwindcss": "^4.1.13",
     "tsx": "^4.7.0",
