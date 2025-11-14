@@ -13,6 +13,7 @@ import { ProjectManager } from './project-manager.js';
 import { JobScheduler } from './job-scheduler.js';
 import { ImplementationLogManager } from './implementation-log-manager.js';
 import { DashboardSessionManager } from '../core/dashboard-session.js';
+import { SpecKitRoutes } from './speckit-routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -32,6 +33,7 @@ export class MultiProjectDashboardServer {
   private projectManager: ProjectManager;
   private jobScheduler: JobScheduler;
   private sessionManager: DashboardSessionManager;
+  private specKitRoutes: SpecKitRoutes | null = null;
   private options: MultiDashboardOptions;
   private actualPort: number = 0;
   private clients: Set<WebSocketConnection> = new Set();
@@ -177,6 +179,9 @@ export class MultiProjectDashboardServer {
     // Setup project manager event handlers
     this.setupProjectManagerEvents();
 
+    // Initialize SpecKit routes
+    this.specKitRoutes = new SpecKitRoutes(this.app, this.projectManager);
+
     // Register API routes
     this.registerApiRoutes();
 
@@ -259,6 +264,11 @@ export class MultiProjectDashboardServer {
   }
 
   private registerApiRoutes() {
+    // Register SpecKit routes for spec-kit project support
+    if (this.specKitRoutes) {
+      this.specKitRoutes.registerRoutes();
+    }
+
     // Projects list
     this.app.get('/api/projects/list', async () => {
       return this.projectManager.getProjectsList();

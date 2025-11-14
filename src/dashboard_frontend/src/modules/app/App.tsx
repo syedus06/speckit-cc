@@ -14,6 +14,7 @@ import { LogsPage } from '../pages/LogsPage';
 import { ApprovalsPage } from '../pages/ApprovalsPage';
 import { SpecViewerPage } from '../pages/SpecViewerPage';
 import { SettingsPage } from '../pages/SettingsPage';
+import { SpecKitEditorPage } from '../pages/SpecKitEditorPage';
 import { NotificationProvider } from '../notifications/NotificationProvider';
 import { VolumeControl } from '../notifications/VolumeControl';
 import { useApi } from '../api/api';
@@ -260,6 +261,7 @@ function AppInner() {
                 <Route path="/steering" element={<SteeringPage />} />
                 <Route path="/specs" element={<SpecsPage />} />
                 <Route path="/specs/view" element={<SpecViewerPage />} />
+                <Route path="/speckit/edit/:featureNumber" element={<SpecKitEditorPage />} />
                 <Route path="/tasks" element={<TasksPage />} />
                 <Route path="/logs" element={<LogsPage />} />
                 <Route path="/approvals" element={<ApprovalsPage />} />
