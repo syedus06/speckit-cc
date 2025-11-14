@@ -525,6 +525,270 @@ export class SpecKitRoutes {
       }
     });
 
+    // Analyze command - Cross-artifact consistency checking
+    this.app.post('/api/projects/:projectId/speckit/workflows/analyze', async (request: any, reply: any) => {
+      const { projectId } = request.params;
+      const { featureNumber } = request.body as { featureNumber: string };
+
+      try {
+        const project = self.projectManager.getProject(projectId);
+        if (!project) {
+          return reply.code(404).send({ error: 'Project not found' });
+        }
+
+        const features = await self.getSpecKitFeatures(project.projectPath);
+        const feature = features.find(f => f.featureNumber === featureNumber);
+
+        if (!feature) {
+          return reply.code(404).send({ error: 'Feature not found' });
+        }
+
+        // Read all artifacts
+        const artifacts: Record<string, { exists: boolean; content: string; wordCount: number }> = {};
+        const artifactFiles = ['spec.md', 'plan.md', 'tasks.md', 'research.md', 'data-model.md', 'quickstart.md'];
+
+        for (const fileName of artifactFiles) {
+          const filePath = join(feature.directoryPath, fileName);
+          if (existsSync(filePath)) {
+            const content = await readFile(filePath, 'utf-8');
+            artifacts[fileName] = {
+              exists: true,
+              content,
+              wordCount: content.split(/\s+/).filter(w => w).length
+            };
+          } else {
+            artifacts[fileName] = { exists: false, content: '', wordCount: 0 };
+          }
+        }
+
+        // Check for contracts
+        const contractsDir = join(feature.directoryPath, 'contracts');
+        const hasContracts = existsSync(contractsDir);
+        let contractCount = 0;
+        if (hasContracts) {
+          const contractFiles = await readdir(contractsDir);
+          contractCount = contractFiles.filter(f => f.endsWith('.md')).length;
+        }
+
+        // Perform consistency checks
+        const issues: Array<{ severity: 'critical' | 'high' | 'medium' | 'low'; category: string; message: string }> = [];
+        const insights: Array<{ type: 'positive' | 'neutral' | 'warning'; message: string }> = [];
+
+        // Check 1: Spec should exist
+        if (!artifacts['spec.md'].exists) {
+          issues.push({
+            severity: 'critical',
+            category: 'Missing Artifacts',
+            message: 'spec.md is missing. All features must start with a specification.'
+          });
+        } else {
+          insights.push({
+            type: 'positive',
+            message: `Specification exists with ${artifacts['spec.md'].wordCount} words`
+          });
+        }
+
+        // Check 2: If spec exists, plan should exist
+        if (artifacts['spec.md'].exists && !artifacts['plan.md'].exists) {
+          issues.push({
+            severity: 'high',
+            category: 'Workflow Gap',
+            message: 'plan.md is missing. Specification should be followed by implementation plan.'
+          });
+        } else if (artifacts['plan.md'].exists) {
+          insights.push({
+            type: 'positive',
+            message: `Implementation plan exists with ${artifacts['plan.md'].wordCount} words`
+          });
+        }
+
+        // Check 3: If plan exists, tasks should exist (TDD requirement)
+        if (artifacts['plan.md'].exists && !artifacts['tasks.md'].exists) {
+          issues.push({
+            severity: 'critical',
+            category: 'Constitutional Violation',
+            message: 'tasks.md is missing. Article III requires tasks before implementation (TDD).'
+          });
+        } else if (artifacts['tasks.md'].exists) {
+          // Count tasks
+          const taskLines = artifacts['tasks.md'].content.split('\n').filter(line => line.match(/^-\s*\[/));
+          const completedTasks = taskLines.filter(line => line.match(/\[(x|X)\]/)).length;
+          insights.push({
+            type: completedTasks === taskLines.length ? 'positive' : 'neutral',
+            message: `${completedTasks}/${taskLines.length} tasks completed`
+          });
+
+          // Check for test tasks
+          const testTasks = taskLines.filter(line =>
+            line.toLowerCase().includes('test') ||
+            line.toLowerCase().includes('spec')
+          );
+          if (testTasks.length === 0) {
+            issues.push({
+              severity: 'high',
+              category: 'Testing',
+              message: 'No test-related tasks found. TDD requires tests before implementation.'
+            });
+          } else {
+            insights.push({
+              type: 'positive',
+              message: `${testTasks.length} test-related tasks identified`
+            });
+          }
+        }
+
+        // Check 4: Research should exist for complex features
+        if (artifacts['spec.md'].wordCount > 200 && !artifacts['research.md'].exists) {
+          issues.push({
+            severity: 'medium',
+            category: 'Planning',
+            message: 'research.md is missing for a complex feature. Consider documenting technical alternatives.'
+          });
+        } else if (artifacts['research.md'].exists) {
+          insights.push({
+            type: 'positive',
+            message: `Research documented with ${artifacts['research.md'].wordCount} words`
+          });
+        }
+
+        // Check 5: Data model for features with storage
+        const mentionsData = [
+          artifacts['spec.md'].content.toLowerCase().includes('database'),
+          artifacts['spec.md'].content.toLowerCase().includes('storage'),
+          artifacts['spec.md'].content.toLowerCase().includes('persist'),
+          artifacts['spec.md'].content.toLowerCase().includes('data')
+        ].some(Boolean);
+
+        if (mentionsData && !artifacts['data-model.md'].exists) {
+          issues.push({
+            severity: 'medium',
+            category: 'Data Modeling',
+            message: 'Spec mentions data/storage but data-model.md is missing.'
+          });
+        } else if (artifacts['data-model.md'].exists) {
+          insights.push({
+            type: 'positive',
+            message: `Data model defined with ${artifacts['data-model.md'].wordCount} words`
+          });
+        }
+
+        // Check 6: Contracts for integration features
+        const mentionsAPI = [
+          artifacts['spec.md'].content.toLowerCase().includes('api'),
+          artifacts['spec.md'].content.toLowerCase().includes('endpoint'),
+          artifacts['spec.md'].content.toLowerCase().includes('integration'),
+          artifacts['spec.md'].content.toLowerCase().includes('service')
+        ].some(Boolean);
+
+        if (mentionsAPI && !hasContracts) {
+          issues.push({
+            severity: 'medium',
+            category: 'Integration',
+            message: 'Spec mentions APIs/integration but no contracts defined in contracts/ directory.'
+          });
+        } else if (hasContracts) {
+          insights.push({
+            type: 'positive',
+            message: `${contractCount} contract(s) defined`
+          });
+        }
+
+        // Check 7: Quickstart for verification
+        if (artifacts['tasks.md'].exists && !artifacts['quickstart.md'].exists) {
+          issues.push({
+            severity: 'low',
+            category: 'Testing',
+            message: 'quickstart.md is missing. Consider documenting key validation scenarios.'
+          });
+        } else if (artifacts['quickstart.md'].exists) {
+          insights.push({
+            type: 'positive',
+            message: `Quickstart guide exists with ${artifacts['quickstart.md'].wordCount} words`
+          });
+        }
+
+        // Check 8: Alignment between spec and plan
+        if (artifacts['spec.md'].exists && artifacts['plan.md'].exists) {
+          // Extract sections from spec
+          const specSections = artifacts['spec.md'].content.match(/^##\s+(.+)$/gm) || [];
+          const planSections = artifacts['plan.md'].content.match(/^##\s+(.+)$/gm) || [];
+
+          if (specSections.length > 0 && planSections.length === 0) {
+            insights.push({
+              type: 'warning',
+              message: 'Plan lacks structured sections. Consider organizing with headers.'
+            });
+          }
+
+          // Check if plan addresses spec goals
+          if (artifacts['spec.md'].content.includes('## Goals') &&
+              !artifacts['plan.md'].content.toLowerCase().includes('goal')) {
+            insights.push({
+              type: 'warning',
+              message: 'Plan may not address all specification goals'
+            });
+          }
+        }
+
+        // Calculate completeness score
+        const totalArtifacts = artifactFiles.length + (hasContracts ? 1 : 0);
+        const existingArtifacts = artifactFiles.filter(f => artifacts[f].exists).length + (hasContracts ? 1 : 0);
+        const completeness = Math.round((existingArtifacts / totalArtifacts) * 100);
+
+        // Calculate quality score based on issues
+        const criticalIssues = issues.filter(i => i.severity === 'critical').length;
+        const highIssues = issues.filter(i => i.severity === 'high').length;
+        const mediumIssues = issues.filter(i => i.severity === 'medium').length;
+        const lowIssues = issues.filter(i => i.severity === 'low').length;
+
+        let qualityScore = 100;
+        qualityScore -= criticalIssues * 25;
+        qualityScore -= highIssues * 15;
+        qualityScore -= mediumIssues * 8;
+        qualityScore -= lowIssues * 3;
+        qualityScore = Math.max(0, qualityScore);
+
+        return {
+          featureNumber,
+          featureName: feature.shortName,
+          artifacts: Object.fromEntries(
+            Object.entries(artifacts).map(([name, data]) => [
+              name,
+              { exists: data.exists, wordCount: data.wordCount }
+            ])
+          ),
+          contracts: {
+            exists: hasContracts,
+            count: contractCount
+          },
+          analysis: {
+            completeness,
+            qualityScore,
+            issueCount: issues.length,
+            issues: issues.sort((a, b) => {
+              const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+              return severityOrder[a.severity] - severityOrder[b.severity];
+            }),
+            insights
+          },
+          recommendations: qualityScore < 70
+            ? ['Address critical and high severity issues before implementation',
+               'Ensure all constitutional requirements are met',
+               'Complete missing artifacts for comprehensive documentation']
+            : qualityScore < 90
+            ? ['Review and address remaining issues',
+               'Consider adding missing optional artifacts',
+               'Validate alignment between spec and implementation']
+            : ['Feature is well-documented and ready for implementation',
+               'All critical artifacts are in place',
+               'Proceed with confidence following TDD principles']
+        };
+      } catch (error: any) {
+        console.error(`Error analyzing feature: ${error.message}`);
+        return reply.code(500).send({ error: `Failed to analyze feature: ${error.message}` });
+      }
+    });
+
     // Execute workflow command (specify, plan, tasks, implement, etc.)
     this.app.post('/api/projects/:projectId/speckit/workflows/execute', async (request: any, reply: any) => {
       const { projectId } = request.params;
