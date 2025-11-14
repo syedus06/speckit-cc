@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useApi } from '../api/api';
 import { ConstitutionDTO } from '../../types';
+import { Markdown } from '../markdown/Markdown';
 
 export function ConstitutionPage() {
   const { projectId } = useApi();
@@ -70,13 +71,11 @@ export function ConstitutionPage() {
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <div className="text-sm text-gray-500 dark:text-gray-500 mb-4">
+        <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
           Last modified: {new Date(constitution.lastModified).toLocaleString()}
         </div>
         <div className="prose dark:prose-invert max-w-none">
-          <pre className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 font-sans">
-            {constitution.content}
-          </pre>
+          <Markdown content={constitution.content} />
         </div>
       </div>
     </div>

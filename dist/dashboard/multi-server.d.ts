@@ -8,6 +8,7 @@ export declare class MultiProjectDashboardServer {
     private jobScheduler;
     private sessionManager;
     private projectRegistry;
+    private specKitRoutes?;
     private options;
     private actualPort;
     private clients;

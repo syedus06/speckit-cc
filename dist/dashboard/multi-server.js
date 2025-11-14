@@ -14,6 +14,7 @@ import { ImplementationLogManager } from './implementation-log-manager.js';
 import { ProjectRegistry } from '../core/project-registry.js';
 import { DashboardSessionManager } from '../core/dashboard-session.js';
 import { isWorkflowProject } from '../types.js';
+import { SpecKitRoutes } from './speckit-routes.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 export class MultiProjectDashboardServer {
@@ -22,6 +23,7 @@ export class MultiProjectDashboardServer {
     jobScheduler;
     sessionManager;
     projectRegistry;
+    specKitRoutes;
     options;
     actualPort = 0;
     clients = new Set();
@@ -148,6 +150,8 @@ export class MultiProjectDashboardServer {
         });
         // Setup project manager event handlers
         this.setupProjectManagerEvents();
+        // Initialize SpecKit routes
+        this.specKitRoutes = new SpecKitRoutes(this.app, this.projectRegistry);
         // Register API routes
         this.registerApiRoutes();
         // Validate and set port (always provided by caller)
@@ -372,28 +376,7 @@ export class MultiProjectDashboardServer {
                 return reply.code(500).send({ error: `Failed to get spec details: ${error.message}` });
             }
         });
-        // Get constitution for spec-kit project
-        this.app.get('/api/projects/:projectId/constitution', async (request, reply) => {
-            const { projectId } = request.params;
-            try {
-                const project = self.projectRegistry.getProjectContext(projectId);
-                if (!project) {
-                    return reply.code(404).send({ error: 'Project not found' });
-                }
-                if (project.projectType !== 'spec-kit') {
-                    return reply.code(400).send({ error: 'Project is not a spec-kit project' });
-                }
-                const parser = project.parser;
-                const constitution = await parser.parseConstitution();
-                if (!constitution) {
-                    return reply.code(404).send({ error: 'Constitution not found' });
-                }
-                return constitution;
-            }
-            catch (error) {
-                return reply.code(500).send({ error: `Failed to get constitution: ${error.message}` });
-            }
-        });
+        // Constitution routes now handled by SpecKitRoutes class
         // Get templates for spec-kit project
         this.app.get('/api/projects/:projectId/templates', async (request, reply) => {
             const { projectId } = request.params;

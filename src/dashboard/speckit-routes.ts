@@ -3,8 +3,9 @@ import { readFile, writeFile, mkdir, unlink } from 'fs/promises';
 import { join, dirname } from 'path';
 import { spawn } from 'child_process';
 import { existsSync } from 'fs';
-import type { SpecKitParser } from '../core/parser';
-import type { ProjectRegistry } from '../core/project-registry';
+import type { SpecKitParser } from '../core/parser.js';
+import type { ProjectRegistry } from '../core/project-registry.js';
+import { TaskExecutor } from './task-executor.js';
 
 interface SpecFileContent {
   fileName: string;
@@ -18,10 +19,13 @@ interface WorkflowExecutionRequest {
 }
 
 export class SpecKitRoutes {
+  private taskExecutor: TaskExecutor;
+
   constructor(
     private app: FastifyInstance,
     private projectRegistry: ProjectRegistry
   ) {
+    this.taskExecutor = new TaskExecutor();
     this.registerRoutes();
   }
 
@@ -46,7 +50,7 @@ export class SpecKitRoutes {
 
         const parser = project.parser as SpecKitParser;
         const specs = await parser.getSpecs();
-        const spec = specs.find(s => s.featureNumber === featureNumber);
+        const spec = specs.find((s: any) => s.featureNumber === featureNumber);
 
         if (!spec) {
           return reply.code(404).send({ error: 'Spec not found' });
@@ -93,7 +97,7 @@ export class SpecKitRoutes {
 
         const parser = project.parser as SpecKitParser;
         const specs = await parser.getSpecs();
-        const spec = specs.find(s => s.featureNumber === featureNumber);
+        const spec = specs.find((s: any) => s.featureNumber === featureNumber);
 
         if (!spec) {
           return reply.code(404).send({ error: 'Spec not found' });
@@ -105,9 +109,7 @@ export class SpecKitRoutes {
           'data-model.md', 'quickstart.md', 'README.md'
         ];
 
-        if (!allowedFiles.includes(fileName)) {   });
-443
-
+        if (!allowedFiles.includes(fileName)) {
           return reply.code(400).send({ error: 'Invalid file name' });
         }
 
@@ -141,8 +143,8 @@ export class SpecKitRoutes {
 
         // Find next feature number
         const numbers = specs
-          .map(s => parseInt(s.featureNumber, 10))
-          .filter(n => !isNaN(n));
+          .map((s: any) => parseInt(s.featureNumber, 10))
+          .filter((n: number) => !isNaN(n));
         const nextNumber = numbers.length > 0 ? Math.max(...numbers) + 1 : 1;
         const featureNumber = String(nextNumber).padStart(3, '0');
 
@@ -227,7 +229,7 @@ export class SpecKitRoutes {
 
         const parser = project.parser as SpecKitParser;
         const specs = await parser.getSpecs();
-        const spec = specs.find(s => s.featureNumber === featureNumber);
+        const spec = specs.find((s: any) => s.featureNumber === featureNumber);
 
         if (!spec) {
           return reply.code(404).send({ error: 'Spec not found' });
@@ -312,13 +314,14 @@ export class SpecKitRoutes {
         }
 
         const parser = project.parser as SpecKitParser;
-        const constitution = await parser.getConstitution();
+        const constitution = await parser.parseConstitution();
 
         if (!constitution) {
           return reply.code(404).send({ error: 'Constitution not found' });
         }
 
-        const constitutionPath = join(project.projectPath, 'memory', 'constitution.md');
+        // Use the filePath from the constitution object if available, otherwise construct it
+        const constitutionPath = constitution.filePath || join(project.projectPath, '.specify', 'memory', 'constitution.md');
         const content = await readFile(constitutionPath, 'utf-8');
 
         return {
@@ -347,7 +350,7 @@ export class SpecKitRoutes {
           return reply.code(400).send({ error: 'Project is not a spec-kit project' });
         }
 
-        const constitutionPath = join(project.projectPath, 'memory', 'constitution.md');
+        const constitutionPath = join(project.projectPath, '.specify', 'memory', 'constitution.md');
         const constitutionDir = dirname(constitutionPath);
 
         // Ensure directory exists
@@ -359,6 +362,69 @@ export class SpecKitRoutes {
       } catch (error: any) {
         console.error(`Error updating constitution: ${error.message}`);
         return reply.code(500).send({ error: `Failed to update constitution: ${error.message}` });
+      }
+    });
+
+    // Execute a task (AI-powered code generation and file creation)
+    this.app.post('/api/projects/:projectId/tasks/:taskId/execute', async (request: any, reply: any) => {
+      const { projectId, taskId } = request.params as { projectId: string; taskId: string };
+      const { featureNumber, taskDescription, filePath, agentType } = request.body as {
+        featureNumber: string;
+        taskDescription: string;
+        filePath?: string;
+        agentType?: string;
+      };
+
+      try {
+        const project = self.projectRegistry.getProjectContext(projectId);
+        if (!project) {
+          return reply.code(404).send({ error: 'Project not found' });
+        }
+
+        if (project.projectType !== 'spec-kit') {
+          return reply.code(400).send({ error: 'Project is not a spec-kit project' });
+        }
+
+        // Execute task using TaskExecutor
+        const result = await self.taskExecutor.executeTask({
+          taskId,
+          taskDescription,
+          filePath,
+          projectPath: project.projectPath,
+          featureNumber,
+          agentType: agentType as any
+        });
+
+        return result;
+      } catch (error: any) {
+        console.error(`Error executing task: ${error.message}`);
+        return reply.code(500).send({ error: `Failed to execute task: ${error.message}` });
+      }
+    });
+
+    // Get task execution status
+    this.app.get('/api/projects/:projectId/tasks/:taskId/executions/:executionId', async (request: any, reply: any) => {
+      const { projectId, taskId, executionId } = request.params as {
+        projectId: string;
+        taskId: string;
+        executionId: string;
+      };
+
+      try {
+        const project = self.projectRegistry.getProjectContext(projectId);
+        if (!project) {
+          return reply.code(404).send({ error: 'Project not found' });
+        }
+
+        const status = self.taskExecutor.getExecutionStatus(executionId);
+        if (!status) {
+          return reply.code(404).send({ error: 'Execution not found' });
+        }
+
+        return status;
+      } catch (error: any) {
+        console.error(`Error getting execution status: ${error.message}`);
+        return reply.code(500).send({ error: `Failed to get execution status: ${error.message}` });
       }
     });
   }
