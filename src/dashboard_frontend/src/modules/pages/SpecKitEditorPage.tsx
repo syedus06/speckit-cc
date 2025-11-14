@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MarkdownEditor } from '../components/MarkdownEditor';
+import { ClarifyModal } from '../components/ClarifyModal';
+import { AnalyzeResultsModal } from '../components/AnalyzeResultsModal';
+import { ContractsTab } from '../components/ContractsTab';
+import { WorkflowProgressModal } from '../components/WorkflowProgressModal';
 
 interface SpecFile {
   name: string;
@@ -26,6 +30,11 @@ const SPEC_FILES: Array<{ name: string; label: string; description: string }> = 
   { name: 'tasks.md', label: 'Tasks', description: 'Executable implementation tasks' }
 ];
 
+const ALL_TABS: Array<{ name: string; label: string; description: string; isSpecial?: boolean }> = [
+  ...SPEC_FILES,
+  { name: 'contracts', label: 'Contracts', description: 'API, Event, and Schema contracts', isSpecial: true }
+];
+
 const WORKFLOW_COMMANDS: WorkflowCommand[] = [
   { id: 'specify', label: 'Specify', description: 'Create/update feature specification', icon: '📝' },
   { id: 'clarify', label: 'Clarify', description: 'Ask clarification questions', icon: '❓' },
@@ -47,6 +56,11 @@ export const SpecKitEditorPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showWorkflowPanel, setShowWorkflowPanel] = useState(false);
   const [executingWorkflow, setExecutingWorkflow] = useState<string | null>(null);
+  const [showClarifyModal, setShowClarifyModal] = useState(false);
+  const [showAnalyzeModal, setShowAnalyzeModal] = useState(false);
+  const [showProgressModal, setShowProgressModal] = useState(false);
+  const [progressExecutionId, setProgressExecutionId] = useState<string | null>(null);
+  const [progressCommand, setProgressCommand] = useState<string>('');
 
   // Initialize files state
   useEffect(() => {
@@ -63,9 +77,9 @@ export const SpecKitEditorPage: React.FC = () => {
     setFiles(initialFiles);
   }, []);
 
-  // Load file content when tab changes
+  // Load file content when tab changes (skip for special tabs like contracts)
   useEffect(() => {
-    if (!files[activeTab]?.loaded && projectId && featureNumber) {
+    if (activeTab !== 'contracts' && !files[activeTab]?.loaded && projectId && featureNumber) {
       loadFile(activeTab);
     }
   }, [activeTab, projectId, featureNumber]);
@@ -157,6 +171,18 @@ export const SpecKitEditorPage: React.FC = () => {
   const executeWorkflow = async (command: string) => {
     if (!projectId || !featureNumber) return;
 
+    // Handle special commands with dedicated UIs
+    if (command === 'clarify') {
+      setShowClarifyModal(true);
+      return;
+    }
+
+    if (command === 'analyze') {
+      setShowAnalyzeModal(true);
+      return;
+    }
+
+    // For other commands, use generic executor
     setExecutingWorkflow(command);
     setError(null);
 
@@ -178,8 +204,10 @@ export const SpecKitEditorPage: React.FC = () => {
       const data = await response.json();
       console.log('Workflow executed:', data);
 
-      // TODO: Show execution output in a modal or panel
-      alert(`Workflow ${command} initiated. ExecutionID: ${data.executionId}`);
+      // Show progress modal
+      setProgressCommand(command);
+      setProgressExecutionId(data.executionId);
+      setShowProgressModal(true);
 
     } catch (err: any) {
       console.error('Error executing workflow:', err);
@@ -187,6 +215,11 @@ export const SpecKitEditorPage: React.FC = () => {
     } finally {
       setExecutingWorkflow(null);
     }
+  };
+
+  const handleClarifySuccess = () => {
+    // Reload spec.md to show new clarifications
+    loadFile('spec.md');
   };
 
   const currentFile = files[activeTab];
@@ -228,17 +261,19 @@ export const SpecKitEditorPage: React.FC = () => {
               {showWorkflowPanel ? 'Hide' : 'Show'} Workflows
             </button>
 
-            <button
-              onClick={handleSave}
-              disabled={saving || !currentFile?.modified}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                saving || !currentFile?.modified
-                  ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed'
-                  : 'bg-blue-500 hover:bg-blue-600 text-white'
-              }`}
-            >
-              {saving ? 'Saving...' : 'Save'}
-            </button>
+            {activeTab !== 'contracts' && (
+              <button
+                onClick={handleSave}
+                disabled={saving || !currentFile?.modified}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  saving || !currentFile?.modified
+                    ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed'
+                    : 'bg-blue-500 hover:bg-blue-600 text-white'
+                }`}
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </button>
+            )}
           </div>
         </div>
 
@@ -255,7 +290,7 @@ export const SpecKitEditorPage: React.FC = () => {
           {/* Tabs */}
           <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
             <div className="flex overflow-x-auto">
-              {SPEC_FILES.map(({ name, label }) => (
+              {ALL_TABS.map(({ name, label, isSpecial }) => (
                 <button
                   key={name}
                   onClick={() => setActiveTab(name)}
@@ -263,29 +298,33 @@ export const SpecKitEditorPage: React.FC = () => {
                     activeTab === name
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
                       : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                  } ${files[name]?.modified ? 'font-bold' : ''}`}
+                  } ${!isSpecial && files[name]?.modified ? 'font-bold' : ''}`}
                 >
                   {label}
-                  {files[name]?.modified && ' *'}
+                  {!isSpecial && files[name]?.modified && ' *'}
                 </button>
               ))}
             </div>
           </div>
 
           {/* Editor */}
-          <div className="flex-1 p-4 overflow-hidden">
-            {loading ? (
-              <div className="flex items-center justify-center h-full">
+          <div className="flex-1 overflow-hidden">
+            {activeTab === 'contracts' ? (
+              featureNumber && <ContractsTab featureNumber={featureNumber} />
+            ) : loading ? (
+              <div className="flex items-center justify-center h-full p-4">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
               </div>
             ) : currentFile ? (
-              <MarkdownEditor
-                value={currentFile.content}
-                onChange={handleContentChange}
-                onSave={handleSave}
-                placeholder={`Enter ${currentFile.label} content...`}
-                height="calc(100vh - 250px)"
-              />
+              <div className="p-4 h-full overflow-hidden">
+                <MarkdownEditor
+                  value={currentFile.content}
+                  onChange={handleContentChange}
+                  onSave={handleSave}
+                  placeholder={`Enter ${currentFile.label} content...`}
+                  height="calc(100vh - 250px)"
+                />
+              </div>
             ) : (
               <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
                 Select a file to edit
@@ -369,6 +408,32 @@ export const SpecKitEditorPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Modals */}
+      {featureNumber && (
+        <>
+          <ClarifyModal
+            isOpen={showClarifyModal}
+            onClose={() => setShowClarifyModal(false)}
+            featureNumber={featureNumber}
+            onSuccess={handleClarifySuccess}
+          />
+
+          <AnalyzeResultsModal
+            isOpen={showAnalyzeModal}
+            onClose={() => setShowAnalyzeModal(false)}
+            featureNumber={featureNumber}
+          />
+
+          <WorkflowProgressModal
+            isOpen={showProgressModal}
+            onClose={() => setShowProgressModal(false)}
+            command={progressCommand}
+            executionId={progressExecutionId}
+            featureNumber={featureNumber}
+          />
+        </>
+      )}
     </div>
   );
 };
