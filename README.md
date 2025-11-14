@@ -30,9 +30,11 @@ A Model Context Protocol (MCP) server for structured spec-driven development wit
 - **Structured Development Workflow** - Sequential spec creation (Requirements → Design → Tasks)
 - **Real-Time Web Dashboard** - Monitor specs, tasks, and progress with live updates
 - **VSCode Extension** - Integrated sidebar dashboard for VSCode users
+- **Spec-Kit Compatibility** - Full support for spec-kit projects with unified dashboard
 - **Approval Workflow** - Complete approval process with revisions
 - **Task Progress Tracking** - Visual progress bars and detailed status
 - **Implementation Logs** - Searchable logs of all task implementations with code statistics
+- **Performance Optimization** - Caching, concurrency control, and performance metrics
 - **Multi-Language Support** - Available in 11 languages
 
 ## 🌍 Supported Languages
@@ -41,7 +43,25 @@ A Model Context Protocol (MCP) server for structured spec-driven development wit
 
 ## 🚀 Quick Start
 
-### Step 1: Add to your AI tool
+**📖 See [QUICK-START.md](QUICK-START.md) for a complete step-by-step guide!**
+
+### Step 1: Install Dependencies
+
+Clone this repository and install dependencies:
+
+```bash
+git clone <repository-url>
+cd speckit-cc
+npm install
+```
+
+### Step 2: Build the Project
+
+```bash
+npm run build
+```
+
+### Step 3: Add to your AI tool
 
 Add to your MCP configuration (see client-specific setup below):
 
@@ -49,28 +69,44 @@ Add to your MCP configuration (see client-specific setup below):
 {
   "mcpServers": {
     "spec-workflow": {
-      "command": "npx",
-      "args": ["-y", "@pimzino/spec-workflow-mcp@latest", "/path/to/your/project"]
+      "command": "node",
+      "args": ["/home/syedu/code/speckit-cc/dist/index.js", "/path/to/your/project"]
     }
   }
 }
 ```
 
-### Step 2: Choose your interface
+**Note:** Replace `/path/to/your/project` with the actual path to your project directory.
 
-**Option A: Web Dashboard** (Required for CLI users)
-Start the dashboard (runs on port 5000 by default):
+### Step 4: Configure Spec-Kit Project Scanning
+
+Set the root directory for automatic spec-kit project detection:
+
 ```bash
-npx -y @pimzino/spec-workflow-mcp@latest --dashboard
+# Add to your ~/.bashrc or ~/.zshrc
+export SPECKIT_ROOT_DIR="/home/syedu/code"
+
+# Or set temporarily for the current session
+export SPECKIT_ROOT_DIR="/home/syedu/code"
 ```
+
+### Step 5: Start the Dashboard
+
+Start the dashboard from the project root (runs on port 5000 by default):
+
+```bash
+# Development mode
+npm run dev -- --dashboard
+
+# Production mode
+npm start -- --dashboard
+```
+
+The dashboard will automatically scan `/home/syedu/code` for all spec-kit projects (projects with `.specify/` directories) and display them.
 
 The dashboard will be accessible at: http://localhost:5000
 
 > **Note:** Only one dashboard instance is needed. All your projects will connect to the same dashboard.
-
-**Option B: VSCode Extension** (Recommended for VSCode users)
-
-Install [Spec Workflow MCP Extension](https://marketplace.visualstudio.com/items?itemName=Pimzino.spec-workflow-mcp) from the VSCode marketplace.
 
 ## 📝 How to Use
 
@@ -84,6 +120,8 @@ Simply mention spec-workflow in your conversation:
 
 ## 🔧 MCP Client Setup
 
+**Important:** Replace `/path/to/your/project` with your actual project directory path.
+
 <details>
 <summary><strong>Augment Code</strong></summary>
 
@@ -92,8 +130,8 @@ Configure in your Augment settings:
 {
   "mcpServers": {
     "spec-workflow": {
-      "command": "npx",
-      "args": ["-y", "@pimzino/spec-workflow-mcp@latest", "/path/to/your/project"]
+      "command": "node",
+      "args": ["/home/syedu/code/speckit-cc/dist/index.js", "/path/to/your/project"]
     }
   }
 }
@@ -105,18 +143,12 @@ Configure in your Augment settings:
 
 Add to your MCP configuration:
 ```bash
-claude mcp add spec-workflow npx @pimzino/spec-workflow-mcp@latest -- /path/to/your/project
+claude mcp add spec-workflow node /home/syedu/code/speckit-cc/dist/index.js -- /path/to/your/project
 ```
 
 **Important Notes:**
-- The `-y` flag bypasses npm prompts for smoother installation
-- The `--` separator ensures the path is passed to the spec-workflow script, not to npx
+- The `--` separator ensures the path is passed to the script correctly
 - Replace `/path/to/your/project` with your actual project directory path
-
-**Alternative for Windows (if the above doesn't work):**
-```bash
-claude mcp add spec-workflow cmd.exe /c "npx @pimzino/spec-workflow-mcp@latest /path/to/your/project"
-```
 </details>
 
 <details>
@@ -127,14 +159,14 @@ Add to `claude_desktop_config.json`:
 {
   "mcpServers": {
     "spec-workflow": {
-      "command": "npx",
-      "args": ["-y", "@pimzino/spec-workflow-mcp@latest", "/path/to/your/project"]
+      "command": "node",
+      "args": ["/home/syedu/code/speckit-cc/dist/index.js", "/path/to/your/project"]
     }
   }
 }
 ```
 
-> **Important:** Run the dashboard separately with `--dashboard` before starting the MCP server.
+> **Important:** Run the dashboard separately with `npm run dev -- --dashboard` before starting the MCP server.
 
 </details>
 
@@ -146,8 +178,8 @@ Add to your MCP server configuration:
 {
   "mcpServers": {
     "spec-workflow": {
-      "command": "npx",
-      "args": ["-y", "@pimzino/spec-workflow-mcp@latest", "/path/to/your/project"]
+      "command": "node",
+      "args": ["/home/syedu/code/speckit-cc/dist/index.js", "/path/to/your/project"]
     }
   }
 }
@@ -162,8 +194,8 @@ Add to your Continue configuration:
 {
   "mcpServers": {
     "spec-workflow": {
-      "command": "npx",
-      "args": ["-y", "@pimzino/spec-workflow-mcp@latest", "/path/to/your/project"]
+      "command": "node",
+      "args": ["/home/syedu/code/speckit-cc/dist/index.js", "/path/to/your/project"]
     }
   }
 }
@@ -178,8 +210,8 @@ Add to your Cursor settings (`settings.json`):
 {
   "mcpServers": {
     "spec-workflow": {
-      "command": "npx",
-      "args": ["-y", "@pimzino/spec-workflow-mcp@latest", "/path/to/your/project"]
+      "command": "node",
+      "args": ["/home/syedu/code/speckit-cc/dist/index.js", "/path/to/your/project"]
     }
   }
 }
@@ -196,7 +228,7 @@ Add to your `opencode.json` configuration file:
   "mcp": {
     "spec-workflow": {
       "type": "local",
-      "command": ["npx", "-y", "@pimzino/spec-workflow-mcp@latest", "/path/to/your/project"],
+      "command": ["node", "/home/syedu/code/speckit-cc/dist/index.js", "/path/to/your/project"],
       "enabled": true
     }
   }
@@ -224,6 +256,7 @@ The dashboard will be available at: http://localhost:5000
 
 ## 📚 Documentation
 
+- [Spec-Kit Compatibility Guide](docs/SPEC-KIT-COMPATIBILITY.md) - Using Spec Workflow MCP with spec-kit projects
 - [Configuration Guide](docs/CONFIGURATION.md) - Command-line options, config files
 - [User Guide](docs/USER-GUIDE.md) - Comprehensive usage examples
 - [Workflow Process](docs/WORKFLOW.md) - Development workflow and best practices

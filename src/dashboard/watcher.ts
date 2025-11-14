@@ -10,15 +10,39 @@ export interface SpecChangeEvent {
   data?: ParsedSpec | any;
 }
 
+export interface RootDirectoryChangeEvent {
+  type: 'root-scan';
+  action: 'triggered';
+  reason: 'filesystem-change' | 'manual';
+}
+
 export class SpecWatcher extends EventEmitter {
   private projectPath: string;
   private parser: SpecParser;
   private watcher?: chokidar.FSWatcher;
+  private rootWatcher?: chokidar.FSWatcher;
+  private rootDirectory?: string;
+  private projectRegistry?: any; // Reference to ProjectRegistry for rescanning
+  private rescanTimeout?: NodeJS.Timeout;
 
   constructor(projectPath: string, parser: SpecParser) {
     super();
     this.projectPath = projectPath;
     this.parser = parser;
+  }
+
+  /**
+   * Set the root directory to watch for project changes
+   */
+  setRootDirectory(rootDir: string): void {
+    this.rootDirectory = rootDir;
+  }
+
+  /**
+   * Set the project registry reference for triggering rescans
+   */
+  setProjectRegistry(registry: any): void {
+    this.projectRegistry = registry;
   }
 
   async start(): Promise<void> {
@@ -40,6 +64,11 @@ export class SpecWatcher extends EventEmitter {
     this.watcher.on('change', (filePath) => this.handleFileChange('updated', filePath));
     this.watcher.on('unlink', (filePath) => this.handleFileChange('deleted', filePath));
 
+    // Start root directory watching if configured
+    if (this.rootDirectory) {
+      await this.startRootWatching();
+    }
+
     // File watcher started for workflow directories
   }
 
@@ -51,9 +80,113 @@ export class SpecWatcher extends EventEmitter {
       this.watcher = undefined;
       // File watcher stopped
     }
+
+    // Stop root directory watching
+    if (this.rootWatcher) {
+      this.rootWatcher.removeAllListeners();
+      await this.rootWatcher.close();
+      this.rootWatcher = undefined;
+    }
+
+    // Clear any pending rescan timeout
+    if (this.rescanTimeout) {
+      clearTimeout(this.rescanTimeout);
+      this.rescanTimeout = undefined;
+    }
     
     // Clean up EventEmitter listeners
     this.removeAllListeners();
+  }
+
+  /**
+   * Start watching the root directory for project creation/deletion
+   */
+  private async startRootWatching(): Promise<void> {
+    if (!this.rootDirectory || !this.projectRegistry) {
+      return;
+    }
+
+    if (this.rootWatcher) {
+      await this.stopRootWatching();
+    }
+
+    // Watch for directory creation/deletion in root directory
+    this.rootWatcher = chokidar.watch(this.rootDirectory, {
+      ignoreInitial: true,
+      persistent: true,
+      ignorePermissionErrors: true,
+      depth: 0, // Only watch immediate subdirectories
+      awaitWriteFinish: {
+        stabilityThreshold: 2000,
+        pollInterval: 100
+      }
+    });
+
+    this.rootWatcher.on('addDir', () => this.scheduleRootRescan('filesystem-change'));
+    this.rootWatcher.on('unlinkDir', () => this.scheduleRootRescan('filesystem-change'));
+  }
+
+  /**
+   * Stop watching the root directory
+   */
+  private async stopRootWatching(): Promise<void> {
+    if (this.rootWatcher) {
+      this.rootWatcher.removeAllListeners();
+      await this.rootWatcher.close();
+      this.rootWatcher = undefined;
+    }
+
+    if (this.rescanTimeout) {
+      clearTimeout(this.rescanTimeout);
+      this.rescanTimeout = undefined;
+    }
+  }
+
+  /**
+   * Schedule a root directory rescan with debouncing
+   */
+  private scheduleRootRescan(reason: 'filesystem-change' | 'manual'): void {
+    // Clear any existing timeout
+    if (this.rescanTimeout) {
+      clearTimeout(this.rescanTimeout);
+    }
+
+    // Schedule rescan with 5 second debounce
+    this.rescanTimeout = setTimeout(async () => {
+      await this.performRootRescan(reason);
+      this.rescanTimeout = undefined;
+    }, 5000);
+  }
+
+  /**
+   * Perform the actual root directory rescan
+   */
+  private async performRootRescan(reason: 'filesystem-change' | 'manual'): Promise<void> {
+    try {
+      if (this.projectRegistry && this.projectRegistry.scanRootDirectory) {
+        await this.projectRegistry.scanRootDirectory();
+      }
+
+      // Emit root scan event
+      const event: RootDirectoryChangeEvent = {
+        type: 'root-scan',
+        action: 'triggered',
+        reason
+      };
+
+      this.emit('root-scan', event);
+    } catch (error) {
+      // Error during root directory rescan
+    }
+  }
+
+  /**
+   * Manually trigger a root directory rescan (for API calls)
+   */
+  async triggerManualRescan(): Promise<void> {
+    if (this.rootDirectory && this.projectRegistry) {
+      await this.scheduleRootRescan('manual');
+    }
   }
 
   private async handleFileChange(action: 'created' | 'updated' | 'deleted', filePath: string): Promise<void> {

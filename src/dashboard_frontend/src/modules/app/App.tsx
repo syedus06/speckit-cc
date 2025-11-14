@@ -8,12 +8,17 @@ import { ApiProvider } from '../api/api';
 import { HighlightStyles } from '../theme/HighlightStyles';
 import { DashboardStatistics } from '../pages/DashboardStatistics';
 import { SpecsPage } from '../pages/SpecsPage';
+import { FeatureSpecsPage } from '../pages/FeatureSpecsPage';
 import { SteeringPage } from '../pages/SteeringPage';
 import { TasksPage } from '../pages/TasksPage';
 import { LogsPage } from '../pages/LogsPage';
 import { ApprovalsPage } from '../pages/ApprovalsPage';
 import { SpecViewerPage } from '../pages/SpecViewerPage';
 import { SettingsPage } from '../pages/SettingsPage';
+import { AgentsPage } from '../pages/AgentsPage';
+import { ConstitutionPage } from '../pages/ConstitutionPage';
+import { TemplatesPage } from '../pages/TemplatesPage';
+import { ScriptsPage } from '../pages/ScriptsPage';
 import { NotificationProvider } from '../notifications/NotificationProvider';
 import { VolumeControl } from '../notifications/VolumeControl';
 import { useApi } from '../api/api';
@@ -209,8 +214,9 @@ function Header({ toggleSidebar }: { toggleSidebar: () => void }) {
 
 function AppInner() {
   const { initial } = useWs();
-  const { currentProjectId } = useProjects();
+  const { currentProjectId, currentProject } = useProjects();
   const [sidebarOpen, setSidebarOpen] = useState(true); // Default open on desktop
+  const isSpecKit = currentProject?.projectType === 'spec-kit';
 
   const SIDEBAR_COLLAPSE_KEY = 'spec-workflow-sidebar-collapsed';
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
@@ -257,8 +263,12 @@ function AppInner() {
             {currentProjectId ? (
               <Routes>
                 <Route path="/" element={<DashboardStatistics />} />
+                <Route path="/agents" element={<AgentsPage />} />
+                <Route path="/constitution" element={<ConstitutionPage />} />
+                <Route path="/templates" element={<TemplatesPage />} />
+                <Route path="/scripts" element={<ScriptsPage />} />
                 <Route path="/steering" element={<SteeringPage />} />
-                <Route path="/specs" element={<SpecsPage />} />
+                <Route path="/specs" element={isSpecKit ? <FeatureSpecsPage /> : <SpecsPage />} />
                 <Route path="/specs/view" element={<SpecViewerPage />} />
                 <Route path="/tasks" element={<TasksPage />} />
                 <Route path="/logs" element={<LogsPage />} />
@@ -273,10 +283,10 @@ function AppInner() {
                     No Projects Available
                   </h2>
                   <p className="text-gray-600 dark:text-gray-400 mb-6">
-                    Start MCP servers to see projects here.
+                    No spec-kit projects found in the configured root directory.
                   </p>
                   <div className="text-sm text-gray-500 dark:text-gray-500">
-                    Run: <code className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">npx @pimzino/spec-workflow-mcp /path/to/project</code>
+                    Make sure <code className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">SPECKIT_ROOT_DIR</code> is set and contains projects with <code className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">.specify/</code> directories.
                   </div>
                 </div>
               </div>

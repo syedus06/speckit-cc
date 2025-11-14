@@ -4,6 +4,7 @@ import { specStatusTool, specStatusHandler } from './spec-status.js';
 import { steeringGuideTool, steeringGuideHandler } from './steering-guide.js';
 import { approvalsTool, approvalsHandler } from './approvals.js';
 import { logImplementationTool, logImplementationHandler } from './log-implementation.js';
+import { getSpeckitAgentsTool, getSpeckitAgentsHandler, getSpeckitConstitutionTool, getSpeckitConstitutionHandler, getSpeckitTemplatesTool, getSpeckitTemplatesHandler, getSpeckitScriptsTool, getSpeckitScriptsHandler, getSpeckitProjectsTool, getSpeckitProjectsHandler, scanSpeckitRootTool, scanSpeckitRootHandler } from './speckit-tools.js';
 import { ToolContext, ToolResponse, MCPToolResponse, toMCPResponse } from '../types.js';
 
 export function registerTools(): Tool[] {
@@ -12,12 +13,18 @@ export function registerTools(): Tool[] {
     steeringGuideTool,
     specStatusTool,
     approvalsTool,
-    logImplementationTool
+    logImplementationTool,
+    getSpeckitAgentsTool,
+    getSpeckitConstitutionTool,
+    getSpeckitTemplatesTool,
+    getSpeckitScriptsTool,
+    getSpeckitProjectsTool,
+    scanSpeckitRootTool
   ];
 }
 
 export async function handleToolCall(name: string, args: any, context: ToolContext): Promise<MCPToolResponse> {
-  let response: ToolResponse;
+  let response: ToolResponse = { success: false, message: 'Unknown error' };
   let isError = false;
 
   try {
@@ -37,8 +44,24 @@ export async function handleToolCall(name: string, args: any, context: ToolConte
       case 'log-implementation':
         response = await logImplementationHandler(args, context);
         break;
-      default:
-        throw new Error(`Unknown tool: ${name}`);
+      case 'get_speckit_agents':
+        response = await getSpeckitAgentsHandler(args, context);
+        break;
+      case 'get_speckit_constitution':
+        response = await getSpeckitConstitutionHandler(args, context);
+        break;
+      case 'get_speckit_templates':
+        response = await getSpeckitTemplatesHandler(args, context);
+        break;
+      case 'get_speckit_scripts':
+        response = await getSpeckitScriptsHandler(args, context);
+        break;
+      case 'get_speckit_projects':
+        response = await getSpeckitProjectsHandler(args, context);
+        break;
+      case 'scan_speckit_root':
+        response = await scanSpeckitRootHandler(args, context);
+        break;
     }
 
     // Check if the response indicates an error

@@ -1,0 +1,54 @@
+# NPM ignore file - what NOT to publish to npm
+# Keep only the files specified in package.json "files" array
+
+# Source code (published as dist/)
+src/
+scripts/
+containers/
+docs/
+specs/
+.github/
+.vscode/
+*.config.*
+tsconfig*.json
+vitest.config.*
+.eslintrc*
+.prettierrc*
+*.md
+!README.md
+!CHANGELOG.md
+!LICENSE
+
+# Development files
+.env*
+*.log
+coverage/
+.nyc_output/
+.cache/
+.parcel-cache/
+.vite/
+.svelte-kit/
+.idea/
+*.tsbuildinfo
+next-env.d.ts
+
+# OS files
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+
+# Git
+.git/
+.gitignore
+
+# Testing
+tests/
+test-results/
+playwright-report/
+
+# Development dependencies and tools
+node_modules/
+.yarn/
+.pnp.*
+.pnpm-debug.log*

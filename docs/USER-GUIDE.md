@@ -13,6 +13,17 @@ Spec Workflow MCP is a Model Context Protocol server that provides structured, s
 - Manage approvals and revisions
 - Maintain project documentation
 
+### Spec-Kit Compatibility
+
+Spec Workflow MCP also supports spec-kit projects, providing unified monitoring and management for both development methodologies:
+
+- **Automatic Detection** - Spec-kit projects are automatically detected and registered
+- **Unified Dashboard** - Monitor both spec-workflow and spec-kit projects in one interface
+- **Performance Benefits** - All projects benefit from caching and performance optimizations
+- **Type-Aware Display** - Dashboard shows appropriate metrics for each project type
+
+For detailed spec-kit compatibility information, see the [Spec-Kit Compatibility Guide](SPEC-KIT-COMPATIBILITY.md).
+
 ### Basic Workflow
 
 1. **Create a spec** - Define what you want to build
@@ -359,6 +370,7 @@ The AI maintains context between sessions:
 
 ## Related Documentation
 
+- [Spec-Kit Compatibility Guide](SPEC-KIT-COMPATIBILITY.md) - Using Spec Workflow MCP with spec-kit projects
 - [Workflow Process](WORKFLOW.md) - Detailed workflow guide
 - [Prompting Guide](PROMPTING-GUIDE.md) - Example prompts
 - [Interfaces Guide](INTERFACES.md) - Dashboard and extension details

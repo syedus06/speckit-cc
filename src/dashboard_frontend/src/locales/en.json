@@ -4,6 +4,12 @@
   "projectDescription": "Development workflow dashboard",
   "nav": {
     "statistics": "Statistics",
+    "overview": "Overview",
+    "agents": "AI Agents",
+    "features": "Features",
+    "constitution": "Constitution",
+    "templates": "Templates",
+    "scripts": "Scripts",
     "steering": "Steering",
     "specs": "Specs",
     "tasks": "Tasks",
@@ -74,8 +80,54 @@
     "tooltips": { "viewRendered": "View rendered document", "viewSource": "View source markdown" },
     "empty": { "docNotCreated": "This {{doc}} document hasn't been created yet." }
   },
-  "language": {
-    "select": "Select language"
+  "projects": {
+    "title": "Projects",
+    "subtitle": "Discovered spec-kit and workflow projects",
+    "loading": "Loading projects...",
+    "scanning": "Scanning...",
+    "scan": "Scan Projects",
+    "empty": {
+      "title": "No projects found",
+      "description": "Configure SPECKIT_ROOT_DIR environment variable and scan for projects."
+    },
+    "error": {
+      "title": "Error Loading Projects"
+    },
+    "retry": "Retry",
+    "specs": "Specs",
+    "agents": "Agents",
+    "constitution": "Constitution",
+    "lastScanned": "Last scanned",
+    "switchProject": "Switch project",
+    "activeProject": "Active project",
+    "recentProjects": "Recent projects",
+    "otherProjects": "Other projects",
+    "noRecentProjects": "No recent projects",
+    "projectSwitched": "Switched to project: {{projectName}}",
+    "projectSwitchError": "Failed to switch project",
+    "confirmProjectSwitch": {
+      "title": "Switch Project",
+      "message": "Are you sure you want to switch to project '{{projectName}}'? This will change your active project context.",
+      "confirm": "Switch Project",
+      "cancel": "Stay on Current Project"
+    }
+  },
+  "agents": {
+    "title": "AI Agents",
+    "subtitle": "Available AI assistants and their slash commands",
+    "empty": {
+      "title": "No agents configured",
+      "description": "Create AI agent folders (.claude, .codex, etc.) with commands or prompts subdirectories."
+    },
+    "commands": "commands",
+    "availableCommands": "Available Commands",
+    "lastUpdated": "Last updated"
+  },
+  "badge": {
+    "specKit": "Spec-Kit Project",
+    "specKit.short": "Spec-Kit",
+    "workflow": "Workflow Project",
+    "workflow.short": "Workflow"
   },
   "common": {
     "viewMode": {
@@ -495,5 +547,12 @@
       "loading": "Loading changelog...",
       "notFound": "Changelog not found for this version"
     }
+  },
+  "configuration": {
+    "notAvailable": "Configuration not available",
+    "constitution": "Constitution",
+    "templates": "Templates",
+    "scripts": "Scripts",
+    "scriptExecutionWarning": "Warning: Executing scripts can modify your project files. Make sure you understand what the script does before running it."
   }
 }

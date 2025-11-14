@@ -187,3 +187,135 @@ export function toMCPResponse(response: ToolResponse, isError: boolean = false):
     isError
   };
 }
+
+// Spec-Kit Dashboard Compatibility Types
+
+export interface SpecKitProject {
+  projectId: string; // SHA-1 hash of absolute project path (16 chars)
+  projectPath: string; // Absolute path to project directory
+  projectName: string; // Directory name (derived from path)
+  projectType: 'spec-kit'; // Discriminator for project type
+  rootDirectory: string; // Configured root directory this project was found in
+  hasConstitution: boolean; // Whether .specify/memory/constitution.md exists
+  agentCount: number; // Number of AI agent folders discovered
+  specCount: number; // Number of spec directories in specs/ folder
+  createdAt: string; // ISO timestamp of first detection
+  lastScanned: string; // ISO timestamp of last successful scan
+}
+
+export interface AIAgent {
+  agentId: string; // Unique identifier: {projectId}-{agentName}
+  projectId: string; // Foreign key to SpecKitProject
+  agentName: string; // Name without dot (e.g., "claude", "codex")
+  folderPath: string; // Absolute path to agent folder (e.g., .claude)
+  subdirectoryType: 'commands' | 'prompts'; // Which subdirectory pattern used
+  commandCount: number; // Number of speckit commands discovered
+  commands: AgentCommand[]; // Array of available commands
+  lastUpdated: string; // ISO timestamp of last scan
+}
+
+export interface AgentCommand {
+  commandId: string; // Unique identifier: {agentId}-{commandName}
+  agentId: string; // Foreign key to AIAgent
+  commandName: string; // Command name (e.g., "analyze", "plan")
+  slashCommand: string; // Full slash command (e.g., "/speckit.analyze")
+  filePath: string; // Absolute path to markdown file
+  fileName: string; // File name (e.g., "speckit.analyze.md")
+  description?: string; // Optional description from YAML frontmatter
+  lastModified: string; // ISO timestamp from file mtime
+}
+
+export interface Constitution {
+  projectId: string; // Foreign key to SpecKitProject (unique)
+  filePath: string; // Absolute path to constitution.md
+  content: string; // Full markdown content
+  version?: string; // Extracted version number if present
+  lastModified: string; // ISO timestamp from file mtime
+  principleCount: number; // Number of principles parsed
+}
+
+export interface SpecDirectory {
+  specId: string; // Unique identifier: {projectId}-{featureNumber}
+  projectId: string; // Foreign key to SpecKitProject
+  featureNumber: string; // Zero-padded number (e.g., "001", "042")
+  featureName: string; // Kebab-case name (e.g., "architecture-refactor")
+  directoryName: string; // Full directory name (e.g., "001-architecture-refactor")
+  directoryPath: string; // Absolute path to spec directory
+  hasSpec: boolean; // Whether spec.md exists
+  hasPlan: boolean; // Whether plan.md exists
+  hasTasks: boolean; // Whether tasks.md exists
+  subdirectories: string[]; // Array of subdirectory names
+  taskFiles: string[]; // Array of task breakdown files (tasks-phase*.md)
+  createdAt: string; // ISO timestamp from directory ctime
+  lastModified: string; // ISO timestamp from most recent file mtime
+}
+
+export interface Template {
+  templateId: string; // Unique identifier: {projectId}-{templateName}
+  projectId: string; // Foreign key to SpecKitProject
+  templateName: string; // Template name without extension
+  fileName: string; // Full file name (e.g., "spec-template.md")
+  filePath: string; // Absolute path to template file
+  templateType: 'spec' | 'plan' | 'tasks' | 'checklist' | 'other'; // Template category
+  lastModified: string; // ISO timestamp from file mtime
+}
+
+// Discriminated Union for Project Context
+export type ProjectContext = SpecKitProjectContext | WorkflowProjectContext;
+
+export interface BaseProjectContext {
+  projectId: string;
+  projectPath: string;
+  projectName: string;
+  projectType: 'spec-kit' | 'spec-workflow-mcp';
+}
+
+export interface SpecKitProjectContext extends BaseProjectContext {
+  projectType: 'spec-kit';
+  parser: any; // SpecKitParser instance
+  agents: AIAgent[];
+  constitution?: Constitution;
+  templates: Template[];
+  specs: SpecDirectory[];
+}
+
+export interface WorkflowProjectContext extends BaseProjectContext {
+  projectType: 'spec-workflow-mcp';
+  parser: any; // SpecParser instance
+  watcher: any; // SpecWatcher instance
+  approvalStorage: any; // ApprovalStorage instance
+  archiveService: any; // SpecArchiveService instance
+}
+
+// Type Guards
+export function isSpecKitProject(context: ProjectContext): context is SpecKitProjectContext {
+  return context.projectType === 'spec-kit';
+}
+
+export function isWorkflowProject(context: ProjectContext): context is WorkflowProjectContext {
+  return context.projectType === 'spec-workflow-mcp';
+}
+
+// Value Objects
+export interface AIAgentFolder {
+  folderName: string; // Folder name including dot (e.g., ".claude")
+  folderPath: string; // Absolute path
+  subdirectory: 'commands' | 'prompts' | null; // Which pattern found
+  isValid: boolean; // Whether folder contains speckit files
+}
+
+export interface ScanResult {
+  rootDirectory: string; // Directory that was scanned
+  subdirectoryCount: number; // Total subdirectories found
+  specKitProjectsFound: number; // Projects with .specify folder
+  scanDuration: number; // Milliseconds taken
+  errors: ScanError[]; // Errors encountered during scan
+  timestamp: string; // ISO timestamp of scan
+}
+
+export interface ScanError {
+  path: string; // Path where error occurred
+  errorCode: string; // Error code (ENOENT, EACCES, etc.)
+  message: string; // Human-readable error message
+  severity: 'warning' | 'error'; // Error severity
+}
