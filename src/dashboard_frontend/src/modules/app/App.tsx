@@ -270,6 +270,9 @@ function AppInner() {
                 <Route path="/steering" element={<SteeringPage />} />
                 <Route path="/specs" element={isSpecKit ? <FeatureSpecsPage /> : <SpecsPage />} />
                 <Route path="/specs/view" element={<SpecViewerPage />} />
+                <Route path="/speckit" element={<SpecKitListPage />} />
+                <Route path="/speckit/edit/:featureNumber" element={<SpecKitEditorPage />} />
+                <Route path="/speckit/constitution" element={<ConstitutionEditorPage />} />
                 <Route path="/tasks" element={<TasksPage />} />
                 <Route path="/logs" element={<LogsPage />} />
                 <Route path="/approvals" element={<ApprovalsPage />} />

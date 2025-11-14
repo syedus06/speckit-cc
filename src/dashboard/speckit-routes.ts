@@ -105,7 +105,9 @@ export class SpecKitRoutes {
           'data-model.md', 'quickstart.md', 'README.md'
         ];
 
-        if (!allowedFiles.includes(fileName)) {
+        if (!allowedFiles.includes(fileName)) {   });
+443
+
           return reply.code(400).send({ error: 'Invalid file name' });
         }
 

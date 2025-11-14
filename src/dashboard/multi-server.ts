@@ -183,6 +183,9 @@ export class MultiProjectDashboardServer {
     // Setup project manager event handlers
     this.setupProjectManagerEvents();
 
+    // Initialize SpecKit routes
+    this.specKitRoutes = new SpecKitRoutes(this.app, this.projectManager);
+
     // Register API routes
     this.registerApiRoutes();
 
