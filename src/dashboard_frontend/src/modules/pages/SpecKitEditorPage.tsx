@@ -17,13 +17,13 @@ interface WorkflowCommand {
   icon: string;
 }
 
-const SPEC_FILES: Array<{ name: string; label: string }> = [
-  { name: 'spec.md', label: 'Specification' },
-  { name: 'plan.md', label: 'Implementation Plan' },
-  { name: 'tasks.md', label: 'Tasks' },
-  { name: 'research.md', label: 'Research' },
-  { name: 'data-model.md', label: 'Data Model' },
-  { name: 'quickstart.md', label: 'Quickstart' }
+const SPEC_FILES: Array<{ name: string; label: string; description: string }> = [
+  { name: 'spec.md', label: 'Specification', description: 'Feature requirements and user stories' },
+  { name: 'plan.md', label: 'Implementation Plan', description: 'Technical architecture and approach' },
+  { name: 'research.md', label: 'Research', description: 'Technical investigation and alternatives' },
+  { name: 'data-model.md', label: 'Data Model', description: 'Entity schemas and relationships' },
+  { name: 'quickstart.md', label: 'Quickstart', description: 'Key validation scenarios and testing' },
+  { name: 'tasks.md', label: 'Tasks', description: 'Executable implementation tasks' }
 ];
 
 const WORKFLOW_COMMANDS: WorkflowCommand[] = [
