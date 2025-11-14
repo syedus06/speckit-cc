@@ -313,6 +313,218 @@ export class SpecKitRoutes {
   private registerWorkflowRoutes() {
     const self = this;
 
+    // Clarify command - Generate targeted questions
+    this.app.post('/api/projects/:projectId/speckit/workflows/clarify/generate', async (request: any, reply: any) => {
+      const { projectId } = request.params;
+      const { featureNumber } = request.body as { featureNumber: string };
+
+      try {
+        const project = self.projectManager.getProject(projectId);
+        if (!project) {
+          return reply.code(404).send({ error: 'Project not found' });
+        }
+
+        const features = await self.getSpecKitFeatures(project.projectPath);
+        const feature = features.find(f => f.featureNumber === featureNumber);
+
+        if (!feature) {
+          return reply.code(404).send({ error: 'Feature not found' });
+        }
+
+        // Read existing spec if available
+        const specPath = join(feature.directoryPath, 'spec.md');
+        let specContent = '';
+        if (existsSync(specPath)) {
+          specContent = await readFile(specPath, 'utf-8');
+        }
+
+        // Generate questions based on 9 taxonomies
+        const questionTaxonomies = [
+          {
+            category: 'Functional',
+            icon: '⚙️',
+            questions: [
+              'What are the core features and capabilities this should provide?',
+              'What actions should users be able to perform?',
+              'What workflows need to be supported?',
+              'Are there any edge cases or special scenarios to handle?'
+            ]
+          },
+          {
+            category: 'Technical',
+            icon: '🔧',
+            questions: [
+              'What technologies, frameworks, or libraries should be used?',
+              'Are there any existing systems this needs to integrate with?',
+              'What are the technical constraints or requirements?',
+              'Should this follow any specific architectural patterns?'
+            ]
+          },
+          {
+            category: 'UX/UI',
+            icon: '🎨',
+            questions: [
+              'What should the user interface look like?',
+              'What is the expected user flow?',
+              'Are there any accessibility requirements?',
+              'Should it work on mobile, desktop, or both?'
+            ]
+          },
+          {
+            category: 'Business',
+            icon: '💼',
+            questions: [
+              'What business problem does this solve?',
+              'Who are the target users or stakeholders?',
+              'What is the expected timeline or deadline?',
+              'Are there any budget or resource constraints?'
+            ]
+          },
+          {
+            category: 'Security',
+            icon: '🔒',
+            questions: [
+              'What authentication/authorization is required?',
+              'What sensitive data needs protection?',
+              'Are there any compliance requirements (GDPR, HIPAA, etc.)?',
+              'What are the potential security risks?'
+            ]
+          },
+          {
+            category: 'Performance',
+            icon: '⚡',
+            questions: [
+              'What are the expected load/traffic levels?',
+              'What response time is acceptable?',
+              'Are there any scalability requirements?',
+              'Should caching be implemented?'
+            ]
+          },
+          {
+            category: 'Data',
+            icon: '💾',
+            questions: [
+              'What data needs to be stored?',
+              'What is the data schema/structure?',
+              'How should data be validated?',
+              'What are the data retention requirements?'
+            ]
+          },
+          {
+            category: 'Integration',
+            icon: '🔗',
+            questions: [
+              'What external services or APIs will this use?',
+              'What data needs to be exchanged with other systems?',
+              'Are there any webhook or event requirements?',
+              'What error handling is needed for integrations?'
+            ]
+          },
+          {
+            category: 'Testing',
+            icon: '✅',
+            questions: [
+              'What are the key test scenarios?',
+              'What edge cases should be tested?',
+              'What is the acceptance criteria?',
+              'Are there any performance benchmarks to meet?'
+            ]
+          }
+        ];
+
+        // Filter out questions that might already be answered in spec
+        const relevantQuestions = questionTaxonomies.map(taxonomy => {
+          // Simple heuristic: if category is mentioned in spec, reduce questions
+          const categoryMentioned = specContent.toLowerCase().includes(taxonomy.category.toLowerCase());
+
+          return {
+            ...taxonomy,
+            questions: categoryMentioned
+              ? taxonomy.questions.slice(0, 2) // Show fewer questions if already covered
+              : taxonomy.questions
+          };
+        });
+
+        return {
+          featureNumber,
+          featureName: feature.shortName,
+          taxonomies: relevantQuestions,
+          specExists: existsSync(specPath),
+          totalQuestions: relevantQuestions.reduce((sum, t) => sum + t.questions.length, 0)
+        };
+      } catch (error: any) {
+        console.error(`Error generating clarification questions: ${error.message}`);
+        return reply.code(500).send({ error: `Failed to generate questions: ${error.message}` });
+      }
+    });
+
+    // Clarify command - Save answers and update spec
+    this.app.post('/api/projects/:projectId/speckit/workflows/clarify/submit', async (request: any, reply: any) => {
+      const { projectId } = request.params;
+      const { featureNumber, answers } = request.body as {
+        featureNumber: string;
+        answers: Record<string, Record<string, string>>; // { category: { question: answer } }
+      };
+
+      try {
+        const project = self.projectManager.getProject(projectId);
+        if (!project) {
+          return reply.code(404).send({ error: 'Project not found' });
+        }
+
+        const features = await self.getSpecKitFeatures(project.projectPath);
+        const feature = features.find(f => f.featureNumber === featureNumber);
+
+        if (!feature) {
+          return reply.code(404).send({ error: 'Feature not found' });
+        }
+
+        // Read existing spec
+        const specPath = join(feature.directoryPath, 'spec.md');
+        let specContent = '';
+        if (existsSync(specPath)) {
+          specContent = await readFile(specPath, 'utf-8');
+        }
+
+        // Append clarifications to spec
+        let clarificationSection = '\n\n## Clarifications\n\n';
+        clarificationSection += `> Answers collected: ${new Date().toISOString().split('T')[0]}\n\n`;
+
+        for (const [category, categoryAnswers] of Object.entries(answers)) {
+          const answeredQuestions = Object.entries(categoryAnswers).filter(([_, answer]) => answer.trim());
+
+          if (answeredQuestions.length > 0) {
+            clarificationSection += `### ${category}\n\n`;
+
+            for (const [question, answer] of answeredQuestions) {
+              clarificationSection += `**Q:** ${question}\n\n`;
+              clarificationSection += `**A:** ${answer}\n\n`;
+            }
+          }
+        }
+
+        // Remove old clarifications section if exists
+        specContent = specContent.replace(/\n## Clarifications\n[\s\S]*?(?=\n##|\Z)/, '');
+
+        // Append new clarifications
+        const updatedContent = specContent + clarificationSection;
+
+        await writeFile(specPath, updatedContent, 'utf-8');
+
+        return {
+          success: true,
+          message: 'Clarifications saved to spec.md',
+          filePath: specPath,
+          answersCount: Object.values(answers).reduce((sum, cat) =>
+            sum + Object.values(cat).filter(a => a.trim()).length, 0
+          )
+        };
+      } catch (error: any) {
+        console.error(`Error saving clarifications: ${error.message}`);
+        return reply.code(500).send({ error: `Failed to save clarifications: ${error.message}` });
+      }
+    });
+
     // Execute workflow command (specify, plan, tasks, implement, etc.)
     this.app.post('/api/projects/:projectId/speckit/workflows/execute', async (request: any, reply: any) => {
       const { projectId } = request.params;
