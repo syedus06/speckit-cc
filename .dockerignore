@@ -1,0 +1,28 @@
+# Docker ignore file
+node_modules/
+.git/
+.github/
+.vscode/
+.env*
+*.log
+coverage/
+dist/
+build/
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.nyc_output/
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.vite/
+.svelte-kit/
+.idea/
+*.tsbuildinfo
+next-env.d.ts
+# Keep package files for npm install in container
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml

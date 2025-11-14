@@ -52,6 +52,38 @@
     "title": "Mais Funcionalidades em Breve",
     "description": "Estamos trabalhando em análises e insights adicionais para o seu fluxo de trabalho de desenvolvimento. Fique atento às atualizações!"
   },
+  "projects": {
+    "title": "Projetos",
+    "subtitle": "Projetos spec-kit e de fluxo de trabalho detectados",
+    "loading": "Carregando projetos...",
+    "scanning": "Escaneando...",
+    "scan": "Escanear Projetos",
+    "empty": {
+      "title": "Nenhum projeto encontrado",
+      "description": "Configure a variável de ambiente SPECKIT_ROOT_DIR e escaneie projetos."
+    },
+    "error": {
+      "title": "Erro ao Carregar Projetos"
+    },
+    "retry": "Tentar Novamente",
+    "specs": "Especificações",
+    "agents": "Agentes",
+    "constitution": "Constituição",
+    "lastScanned": "Último escaneamento",
+    "switchProject": "Alternar projeto",
+    "activeProject": "Projeto ativo",
+    "recentProjects": "Projetos recentes",
+    "otherProjects": "Outros projetos",
+    "noRecentProjects": "Nenhum projeto recente",
+    "projectSwitched": "Alternado para projeto: {{projectName}}",
+    "projectSwitchError": "Erro ao alternar projeto",
+    "confirmProjectSwitch": {
+      "title": "Alternar Projeto",
+      "message": "Tem certeza de que deseja alternar para o projeto '{{projectName}}'? Isso alterará seu contexto de projeto ativo.",
+      "confirm": "Alternar Projeto",
+      "cancel": "Permanecer no Projeto Atual"
+    }
+  },
   "links": {
     "npm": "pacote npm",
     "github": "GitHub"

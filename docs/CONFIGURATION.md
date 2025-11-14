@@ -6,23 +6,28 @@ This guide covers all configuration options for Spec Workflow MCP.
 
 ### Basic Usage
 
+From the project root directory:
+
 ```bash
-npx -y @pimzino/spec-workflow-mcp@latest [project-path] [options]
+npm run dev -- [project-path] [options]
+# or for production:
+npm start -- [project-path] [options]
 ```
 
 ### Available Options
 
 | Option | Description | Example |
 |--------|-------------|---------|
-| `--help` | Show comprehensive usage information | `npx -y @pimzino/spec-workflow-mcp@latest --help` |
-| `--dashboard` | Run dashboard-only mode (default port: 5000) | `npx -y @pimzino/spec-workflow-mcp@latest --dashboard` |
-| `--port <number>` | Specify custom dashboard port (1024-65535) | `npx -y @pimzino/spec-workflow-mcp@latest --dashboard --port 8080` |
+| `--help` | Show comprehensive usage information | `npm run dev -- --help` |
+| `--dashboard` | Run dashboard-only mode (default port: 5000) | `npm run dev -- --dashboard` |
+| `--port <number>` | Specify custom dashboard port (1024-65535) | `npm run dev -- --dashboard --port 8080` |
 
 ### Important Notes
 
 - **Single Dashboard Instance**: Only one dashboard runs at a time. All MCP servers connect to the same dashboard.
 - **Default Port**: Dashboard uses port 5000 by default. Use `--port` only if 5000 is unavailable.
 - **Separate Dashboard**: Always run the dashboard separately from MCP servers.
+- **Run from Project Root**: All commands must be run from the speckit-cc project root directory.
 
 ## Usage Examples
 
@@ -30,20 +35,21 @@ npx -y @pimzino/spec-workflow-mcp@latest [project-path] [options]
 
 1. **Start the Dashboard** (do this first, only once):
 ```bash
+# From speckit-cc project root
 # Uses default port 5000
-npx -y @pimzino/spec-workflow-mcp@latest --dashboard
+npm run dev -- --dashboard
 ```
 
-2. **Start MCP Servers** (one per project, in separate terminals):
-```bash
-# Project 1
-npx -y @pimzino/spec-workflow-mcp@latest ~/projects/app1
-
-# Project 2
-npx -y @pimzino/spec-workflow-mcp@latest ~/projects/app2
-
-# Project 3
-npx -y @pimzino/spec-workflow-mcp@latest ~/projects/app3
+2. **Configure MCP Clients** (see README.md for client-specific setup):
+```json
+{
+  "mcpServers": {
+    "spec-workflow": {
+      "command": "node",
+      "args": ["/home/syedu/code/speckit-cc/dist/index.js", "/path/to/your/project"]
+    }
+  }
+}
 ```
 
 All projects will appear in the dashboard at http://localhost:5000
@@ -54,7 +60,7 @@ Only use a custom port if port 5000 is unavailable:
 
 ```bash
 # Start dashboard on port 8080
-npx -y @pimzino/spec-workflow-mcp@latest --dashboard --port 8080
+npm run dev -- --dashboard --port 8080
 ```
 
 ## Dashboard Session Management
@@ -180,10 +186,10 @@ lang = "en"
 3. Use the configuration:
 ```bash
 # Uses .spec-workflow/config.toml automatically
-npx -y @pimzino/spec-workflow-mcp@latest
+npm run dev -- /path/to/your/project
 
 # Or specify explicitly
-npx -y @pimzino/spec-workflow-mcp@latest --config .spec-workflow/config.toml
+npm run dev -- --config .spec-workflow/config.toml /path/to/your/project
 ```
 
 ## Configuration Precedence
@@ -204,7 +210,7 @@ port = 3000
 
 ```bash
 # Command-line argument overrides config file
-npx -y @pimzino/spec-workflow-mcp@latest --config config.toml --port 4000
+npm run dev -- --config config.toml --port 4000
 # Result: port = 4000 (CLI wins)
 ```
 
@@ -225,7 +231,7 @@ verboseLogging = true
 
 Usage:
 ```bash
-npx -y @pimzino/spec-workflow-mcp@latest --config dev-config.toml
+npm run dev -- --config dev-config.toml
 ```
 
 ### Production Configuration
@@ -243,7 +249,7 @@ verboseLogging = false
 
 Usage:
 ```bash
-npx -y @pimzino/spec-workflow-mcp@latest --config prod-config.toml
+npm start -- --config prod-config.toml
 ```
 
 ## Port Configuration
@@ -306,7 +312,7 @@ Use a shared configuration with overrides:
 ~/configs/spec-workflow-base.toml
 
 # Project-specific overrides
-npx -y @pimzino/spec-workflow-mcp@latest \
+npm run dev -- \
   --config ~/configs/spec-workflow-base.toml \
   --port 3000 \
   /path/to/project-a

@@ -22,16 +22,16 @@ The web dashboard is a real-time web application that provides visual access to 
 #### Standalone Dashboard
 ```bash
 # Uses ephemeral port
-npx -y @pimzino/spec-workflow-mcp@latest /path/to/project --dashboard
+npm run dev -- /path/to/project --dashboard
 
 # Custom port
-npx -y @pimzino/spec-workflow-mcp@latest /path/to/project --dashboard --port 3000
+npm run dev -- /path/to/project --dashboard --port 3000
 ```
 
 #### With MCP Server
 ```bash
 # Auto-start with MCP
-npx -y @pimzino/spec-workflow-mcp@latest /path/to/project --AutoStartDashboard
+npm run dev -- /path/to/project --AutoStartDashboard
 ```
 
 ### Dashboard Features
@@ -499,10 +499,10 @@ Inherits VSCode accessibility:
 Configure in multiple terminals:
 ```bash
 # Terminal 1: MCP Server
-npx -y @pimzino/spec-workflow-mcp@latest /project
+npm run dev -- /project
 
 # Terminal 2: Dashboard
-npx -y @pimzino/spec-workflow-mcp@latest /project --dashboard --port 3000
+npm run dev -- /project --dashboard --port 3000
 ```
 
 ### Extension Multi-Root Workspaces

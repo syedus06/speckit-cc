@@ -2,7 +2,7 @@ import * as cron from 'node-cron';
 import { SettingsManager } from './settings-manager.js';
 import { ExecutionHistoryManager } from './execution-history-manager.js';
 import { ProjectManager } from './project-manager.js';
-import { AutomationJob } from '../types.js';
+import { AutomationJob, isWorkflowProject } from '../types.js';
 import { promises as fs } from 'fs';
 import { join } from 'path';
 
@@ -166,12 +166,15 @@ export class JobScheduler {
         if (!projectContext) continue;
 
         if (job.type === 'cleanup-approvals') {
-          const { processed, deleted } = await this.cleanupApprovals(
-            projectContext.approvalStorage,
-            job.config.daysOld
-          );
-          itemsProcessed += processed;
-          itemsDeleted += deleted;
+          // Only run approval cleanup for workflow projects
+          if (isWorkflowProject(projectContext)) {
+            const { processed, deleted } = await this.cleanupApprovals(
+              projectContext.approvalStorage,
+              job.config.daysOld
+            );
+            itemsProcessed += processed;
+            itemsDeleted += deleted;
+          }
         } else if (job.type === 'cleanup-specs') {
           const { processed, deleted } = await this.cleanupSpecs(
             projectContext.parser,

@@ -1,0 +1,17 @@
+# ESLint ignore patterns for Node.js/TypeScript project
+node_modules/
+dist/
+build/
+coverage/
+*.min.js
+*.tsbuildinfo
+next-env.d.ts
+.vscode/
+.idea/
+*.log
+.env*
+.cache/
+.parcel-cache/
+.vite/
+.svelte-kit/
+.nyc_output/

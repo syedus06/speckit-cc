@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useMemo, useState, useCallback, useEffect } from 'react';
 import { useWs } from '../ws/WebSocketProvider';
-import { ImplementationLogEntry } from '../../types';
+import { ImplementationLogEntry, SpecKitProjectDTO } from '../../types';
 
 export type SpecSummary = {
   name: string;
@@ -117,6 +117,9 @@ type ApiActionsContextType = {
   getImplementationLogs: (specName: string, query?: { taskId?: string; search?: string }) => Promise<{ entries: ImplementationLogEntry[] }>;
   getImplementationLogStats: (specName: string, taskId: string) => Promise<any>;
   getChangelog: (version: string) => Promise<{ content: string }>;
+  // Spec-Kit Dashboard Compatibility
+  getProjects: (options?: { type?: 'spec-kit' | 'spec-workflow-mcp'; includeStats?: boolean }) => Promise<{ projects: SpecKitProjectDTO[]; stats?: { total: number; byType: { 'spec-kit': number; 'spec-workflow-mcp': number }; lastScanned: string } }>;
+  scanProjects: () => Promise<{ success: boolean; message: string; projectsCount?: number; rootDirectory?: string }>;
 };
 
 const ApiDataContext = createContext<ApiDataContextType | undefined>(undefined);
@@ -285,6 +288,9 @@ export function ApiProvider({ initial, projectId, children }: ApiProviderProps) 
         getImplementationLogs: async () => ({ entries: [] }),
         getImplementationLogStats: async () => ({}),
         getChangelog: async () => ({ content: '' }),
+        // Spec-Kit Dashboard Compatibility
+        getProjects: async () => ({ projects: [] }),
+        scanProjects: async () => ({ success: false, message: 'No project selected' }),
       };
     }
 
@@ -323,8 +329,27 @@ export function ApiProvider({ initial, projectId, children }: ApiProviderProps) 
         if (params.toString()) url += `?${params.toString()}`;
         return getJson(url);
       },
-      getImplementationLogStats: (specName: string, taskId: string) => getJson(`${prefix}/specs/${encodeURIComponent(specName)}/implementation-log/task/${encodeURIComponent(taskId)}/stats`),
+        getImplementationLogStats: (specName: string, taskId: string) => getJson(`${prefix}/specs/${encodeURIComponent(specName)}/implementation-log/task/${encodeURIComponent(taskId)}/stats`),
       getChangelog: (version: string) => getJson(`${prefix}/changelog/${encodeURIComponent(version)}`),
+      // Spec-Kit Dashboard Compatibility
+      getProjects: (options?: { type?: 'spec-kit' | 'spec-workflow-mcp'; includeStats?: boolean }) => {
+        let url = '/api/projects';
+        const params = new URLSearchParams();
+        if (options?.type) params.append('type', options.type);
+        if (options?.includeStats) params.append('includeStats', 'true');
+        if (params.toString()) url += `?${params.toString()}`;
+        return getJson(url);
+      },
+      scanProjects: async () => {
+        const result = await postJson('/api/scan', {});
+        if (result.ok) {
+          // For successful scans, we expect the response to contain scan results
+          // Since postJson doesn't return data, we'll make a follow-up call or return success
+          return { success: true, message: 'Scan completed successfully' };
+        } else {
+          return { success: false, message: 'Scan failed' };
+        }
+      },
     };
   }, [projectId, reloadAll]);
 

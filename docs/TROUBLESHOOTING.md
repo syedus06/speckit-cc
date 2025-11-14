@@ -7,7 +7,7 @@ This guide helps you resolve common issues with Spec Workflow MCP.
 ### Check Installation
 ```bash
 # Verify npm package is accessible
-npx -y @pimzino/spec-workflow-mcp@latest --help
+npm run dev -- --help
 
 # Check if running in correct directory
 pwd  # or 'cd' on Windows
@@ -19,10 +19,10 @@ ls -la .spec-workflow  # or 'dir .spec-workflow' on Windows
 ### Check Services
 ```bash
 # Test MCP server
-npx -y @pimzino/spec-workflow-mcp@latest /path/to/project
+npm run dev -- /path/to/project
 
 # Test dashboard
-npx -y @pimzino/spec-workflow-mcp@latest /path/to/project --dashboard
+npm run dev -- /path/to/project --dashboard
 
 # Check port availability
 netstat -an | grep 3000  # macOS/Linux
@@ -45,7 +45,7 @@ netstat -an | findstr :3000  # Windows
    ```
 3. Try without version tag:
    ```bash
-   npx @pimzino/spec-workflow-mcp /path/to/project
+   npm run dev -- /path/to/project
    ```
 4. Install globally first:
    ```bash
@@ -69,7 +69,7 @@ netstat -an | findstr :3000  # Windows
    ```
 3. Use npx with -y flag:
    ```bash
-   npx -y @pimzino/spec-workflow-mcp@latest
+   npm run dev --
    ```
 
 ## MCP Server Issues
@@ -94,7 +94,7 @@ netstat -an | findstr :3000  # Windows
    ```
 4. Try with absolute path:
    ```bash
-   npx -y @pimzino/spec-workflow-mcp@latest $(pwd)
+   npm run dev -- $(pwd)
    ```
 
 ### MCP Not Connecting to AI Tool
@@ -119,7 +119,7 @@ netstat -an | findstr :3000  # Windows
    ```bash
    claude mcp list  # Check if spec-workflow is listed
    claude mcp remove spec-workflow  # Remove if exists
-   claude mcp add spec-workflow npx @pimzino/spec-workflow-mcp@latest -- /path/to/project
+   claude mcp add spec-workflow npm run dev --@latest -- /path/to/project
    ```
 
 3. **Path Issues**: Ensure path is absolute and exists:
@@ -145,7 +145,7 @@ netstat -an | findstr :3000  # Windows
 **Solutions**:
 1. Verify dashboard is started:
    ```bash
-   npx -y @pimzino/spec-workflow-mcp@latest /path --dashboard
+   npm run dev -- /path --dashboard
    ```
 2. Check the URL in browser (note the port):
    ```
@@ -162,7 +162,7 @@ netstat -an | findstr :3000  # Windows
 **Solutions**:
 1. Use a different port:
    ```bash
-   npx -y @pimzino/spec-workflow-mcp@latest /path --dashboard --port 3456
+   npm run dev -- /path --dashboard --port 3456
    ```
 2. Find and kill the process using the port:
    ```bash
@@ -176,7 +176,7 @@ netstat -an | findstr :3000  # Windows
    ```
 3. Use ephemeral port (omit --port flag):
    ```bash
-   npx -y @pimzino/spec-workflow-mcp@latest /path --dashboard
+   npm run dev -- /path --dashboard
    ```
 
 ### WebSocket Connection Failed
@@ -215,13 +215,13 @@ netstat -an | findstr :3000  # Windows
 1. Ensure dashboard is running alongside MCP server:
    ```bash
    # Either use auto-start
-   npx -y @pimzino/spec-workflow-mcp@latest /path --AutoStartDashboard
+   npm run dev -- /path --AutoStartDashboard
 
    # Or run both separately
    # Terminal 1:
-   npx -y @pimzino/spec-workflow-mcp@latest /path
+   npm run dev -- /path
    # Terminal 2:
-   npx -y @pimzino/spec-workflow-mcp@latest /path --dashboard
+   npm run dev -- /path --dashboard
    ```
 2. Check approval directory exists:
    ```bash
@@ -342,10 +342,10 @@ netstat -an | findstr :3000  # Windows
 1. Check argument order:
    ```bash
    # Correct
-   npx -y @pimzino/spec-workflow-mcp@latest /path --dashboard --port 3000
+   npm run dev -- /path --dashboard --port 3000
 
    # Wrong
-   npx -y @pimzino/spec-workflow-mcp@latest --dashboard /path --port 3000
+   npm run dev -- --dashboard /path --port 3000
    ```
 2. Ensure flag values are valid:
    - Port: 1024-65535
@@ -423,10 +423,10 @@ netstat -an | findstr :3000  # Windows
 **Solutions**:
 ```bash
 # Use forward slashes
-npx -y @pimzino/spec-workflow-mcp@latest C:/Users/name/project
+npm run dev -- C:/Users/name/project
 
 # Or escaped backslashes
-npx -y @pimzino/spec-workflow-mcp@latest "C:\\Users\\name\\project"
+npm run dev -- "C:\\Users\\name\\project"
 ```
 
 #### PowerShell Execution Policy
@@ -508,7 +508,7 @@ export DEBUG=spec-workflow:*  # macOS/Linux
 set DEBUG=spec-workflow:*  # Windows
 
 # Run with debug output
-npx -y @pimzino/spec-workflow-mcp@latest /path --debug
+npm run dev -- /path --debug
 ```
 
 ## Prevention Tips

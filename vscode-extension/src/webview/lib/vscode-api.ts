@@ -29,6 +29,7 @@ export type ExtensionMessage =
   | { type: 'language-preference-updated'; data: string }
   | { type: 'logs-updated'; data: any }
   | { type: 'logs-search-results'; data: any }
+  | { type: 'spec-directory-details-updated'; data: SpecDirectoryDetails }
   | { type: 'error'; message: string }
   | { type: 'notification'; message: string; level: 'info' | 'warning' | 'error' | 'success' };
 
@@ -59,7 +60,8 @@ export type WebviewMessage =
   | { type: 'set-language-preference'; language: string }
   | { type: 'open-external-url'; url: string }
   | { type: 'get-logs'; specName: string }
-  | { type: 'search-logs'; specName: string; query: string };
+  | { type: 'search-logs'; specName: string; query: string }
+  | { type: 'get-spec-directory-details'; projectId: string; specId: string };
 
 export type TaskStatus = 'pending' | 'in-progress' | 'completed';
 
@@ -172,6 +174,22 @@ export interface SoundNotificationConfig {
   volume: number;
   approvalSound: boolean;
   taskCompletionSound: boolean;
+}
+
+export interface SpecDirectoryDetails {
+  specId: string;
+  projectId: string;
+  featureNumber: string;
+  featureName: string;
+  directoryName: string;
+  directoryPath: string;
+  hasSpec: boolean;
+  hasPlan: boolean;
+  hasTasks: boolean;
+  subdirectories: string[];
+  taskFiles: string[];
+  createdAt: string;
+  lastModified: string;
 }
 
 // Implementation Log Types
@@ -410,6 +428,11 @@ class VsCodeApiService {
 
   searchLogs(specName: string, query: string) {
     this.postMessage({ type: 'search-logs', specName, query });
+  }
+
+  // Spec directory methods
+  getSpecDirectoryDetails(projectId: string, specId: string) {
+    this.postMessage({ type: 'get-spec-directory-details', projectId, specId });
   }
 }
 

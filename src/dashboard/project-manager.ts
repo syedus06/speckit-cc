@@ -5,22 +5,29 @@ import { SpecWatcher } from './watcher.js';
 import { ApprovalStorage } from './approval-storage.js';
 import { SpecArchiveService } from '../core/archive-service.js';
 import { ProjectRegistry, ProjectRegistryEntry, generateProjectId } from '../core/project-registry.js';
-
-export interface ProjectContext {
-  projectId: string;
-  projectPath: string;
-  projectName: string;
-  parser: SpecParser;
-  watcher: SpecWatcher;
-  approvalStorage: ApprovalStorage;
-  archiveService: SpecArchiveService;
-}
+import { ProjectContext, SpecKitProjectContext, WorkflowProjectContext, isSpecKitProject, isWorkflowProject } from '../types.js';
+import { SpecKitParser } from '../core/parser.js';
+import { detectProjectType } from '../core/path-utils.js';
 
 export class ProjectManager extends EventEmitter {
   private registry: ProjectRegistry;
   private projects: Map<string, ProjectContext> = new Map();
+  private activeProjectId?: string;
   private registryWatcher?: chokidar.FSWatcher;
   private cleanupInterval?: NodeJS.Timeout;
+  
+  // Project switching metrics
+  private switchMetrics = {
+    totalSwitches: 0,
+    switchesByProject: new Map<string, number>(),
+    lastSwitchTime: 0,
+    switchHistory: [] as Array<{
+      timestamp: number;
+      fromProjectId: string | null;
+      toProjectId: string | null;
+      duration: number;
+    }>
+  };
 
   constructor() {
     super();
@@ -117,41 +124,62 @@ export class ProjectManager extends EventEmitter {
    */
   private async addProject(entry: ProjectRegistryEntry): Promise<void> {
     try {
-      const parser = new SpecParser(entry.projectPath);
-      const watcher = new SpecWatcher(entry.projectPath, parser);
-      const approvalStorage = new ApprovalStorage(entry.projectPath);
-      const archiveService = new SpecArchiveService(entry.projectPath);
+      const projectType = await detectProjectType(entry.projectPath);
+      let context: ProjectContext;
 
-      // Start watchers
-      await watcher.start();
-      await approvalStorage.start();
+      if (projectType === 'spec-kit') {
+        const parser = new SpecKitParser(entry.projectPath);
+        const metadata = await parser.parseProjectMetadata();
 
-      // Forward events with projectId
-      watcher.on('change', (event) => {
-        this.emit('spec-change', { projectId: entry.projectId, ...event });
-      });
+        context = {
+          projectId: entry.projectId,
+          projectPath: entry.projectPath,
+          projectName: entry.projectName,
+          projectType: 'spec-kit',
+          parser,
+          agents: metadata.agents,
+          constitution: metadata.constitution,
+          templates: metadata.templates,
+          specs: metadata.specs
+        } as SpecKitProjectContext;
+      } else {
+        const parser = new SpecParser(entry.projectPath);
+        const watcher = new SpecWatcher(entry.projectPath, parser);
+        const approvalStorage = new ApprovalStorage(entry.projectPath);
+        const archiveService = new SpecArchiveService(entry.projectPath);
 
-      watcher.on('task-update', (event) => {
-        this.emit('task-update', { projectId: entry.projectId, ...event });
-      });
+        // Start watchers
+        await watcher.start();
+        await approvalStorage.start();
 
-      watcher.on('steering-change', (event) => {
-        this.emit('steering-change', { projectId: entry.projectId, ...event });
-      });
+        // Forward events with projectId
+        watcher.on('change', (event) => {
+          this.emit('spec-change', { projectId: entry.projectId, ...event });
+        });
 
-      approvalStorage.on('approval-change', () => {
-        this.emit('approval-change', { projectId: entry.projectId });
-      });
+        watcher.on('task-update', (event) => {
+          this.emit('task-update', { projectId: entry.projectId, ...event });
+        });
 
-      const context: ProjectContext = {
-        projectId: entry.projectId,
-        projectPath: entry.projectPath,
-        projectName: entry.projectName,
-        parser,
-        watcher,
-        approvalStorage,
-        archiveService
-      };
+        watcher.on('steering-change', (event) => {
+          this.emit('steering-change', { projectId: entry.projectId, ...event });
+        });
+
+        approvalStorage.on('approval-change', () => {
+          this.emit('approval-change', { projectId: entry.projectId });
+        });
+
+        context = {
+          projectId: entry.projectId,
+          projectPath: entry.projectPath,
+          projectName: entry.projectName,
+          projectType: 'spec-workflow-mcp',
+          parser,
+          watcher,
+          approvalStorage,
+          archiveService
+        } as WorkflowProjectContext;
+      }
 
       this.projects.set(entry.projectId, context);
       console.error(`Project added: ${entry.projectName} (${entry.projectId})`);
@@ -161,9 +189,7 @@ export class ProjectManager extends EventEmitter {
     } catch (error) {
       console.error(`Failed to add project ${entry.projectName}:`, error);
     }
-  }
-
-  /**
+  }  /**
    * Remove a project context
    */
   private async removeProject(projectId: string): Promise<void> {
@@ -171,13 +197,15 @@ export class ProjectManager extends EventEmitter {
     if (!context) return;
 
     try {
-      // Stop watchers
-      await context.watcher.stop();
-      await context.approvalStorage.stop();
+      // Stop watchers only for workflow projects
+      if (isWorkflowProject(context)) {
+        await context.watcher.stop();
+        await context.approvalStorage.stop();
 
-      // Remove all listeners
-      context.watcher.removeAllListeners();
-      context.approvalStorage.removeAllListeners();
+        // Remove all listeners
+        context.watcher.removeAllListeners();
+        context.approvalStorage.removeAllListeners();
+      }
 
       this.projects.delete(projectId);
       console.error(`Project removed: ${context.projectName} (${projectId})`);
@@ -198,6 +226,164 @@ export class ProjectManager extends EventEmitter {
       // Registry changed, sync will be triggered by watcher
       console.error(`Cleaned up ${removedCount} stale project(s)`);
     }
+  }
+
+  /**
+   * Set the active project
+   */
+  setActiveProject(projectId: string): boolean {
+    const startTime = Date.now();
+    
+    if (!projectId || projectId.trim() === '') {
+      // Clear active project
+      const previousActiveId = this.activeProjectId;
+      this.activeProjectId = undefined;
+
+      // Emit active project changed event if it actually changed
+      if (previousActiveId !== undefined) {
+        this.recordProjectSwitch(previousActiveId, null, startTime);
+        
+        console.error(`[ProjectManager] Active project cleared (was: ${previousActiveId})`);
+        
+        this.emit('active-project-changed', {
+          previousProjectId: previousActiveId,
+          newProjectId: null,
+          project: null
+        });
+      }
+      return true;
+    }
+
+    const project = this.projects.get(projectId);
+    if (!project) {
+      console.error(`[ProjectManager] Failed to set active project: project ${projectId} not found`);
+      return false;
+    }
+
+    const previousActiveId = this.activeProjectId;
+    
+    // Only proceed if actually changing
+    if (previousActiveId === projectId) {
+      console.error(`[ProjectManager] Project ${projectId} is already active`);
+      return true;
+    }
+
+    this.activeProjectId = projectId;
+    
+    // Record the switch
+    this.recordProjectSwitch(previousActiveId || null, projectId, startTime);
+    
+    console.error(`[ProjectManager] Active project changed: ${previousActiveId || 'none'} → ${projectId} (${project.projectName})`);
+
+    // Emit active project changed event
+    this.emit('active-project-changed', {
+      previousProjectId: previousActiveId,
+      newProjectId: projectId,
+      project: {
+        projectId: project.projectId,
+        projectName: project.projectName,
+        projectPath: project.projectPath
+      }
+    });
+
+    return true;
+  }
+
+  /**
+   * Record project switching metrics
+   */
+  private recordProjectSwitch(fromProjectId: string | null, toProjectId: string | null, startTime: number): void {
+    const now = Date.now();
+    const duration = now - this.switchMetrics.lastSwitchTime;
+    
+    // Update metrics
+    this.switchMetrics.totalSwitches++;
+    this.switchMetrics.lastSwitchTime = now;
+    
+    // Track switches by project
+    if (toProjectId) {
+      const current = this.switchMetrics.switchesByProject.get(toProjectId) || 0;
+      this.switchMetrics.switchesByProject.set(toProjectId, current + 1);
+    }
+    
+    // Add to history (keep last 100 entries)
+    this.switchMetrics.switchHistory.push({
+      timestamp: now,
+      fromProjectId,
+      toProjectId,
+      duration: duration > 0 ? duration : 0
+    });
+    
+    if (this.switchMetrics.switchHistory.length > 100) {
+      this.switchMetrics.switchHistory.shift();
+    }
+    
+    // Log metrics periodically (every 10 switches)
+    if (this.switchMetrics.totalSwitches % 10 === 0) {
+      this.logSwitchMetrics();
+    }
+  }
+
+  /**
+   * Log project switching metrics
+   */
+  private logSwitchMetrics(): void {
+    const metrics = this.switchMetrics;
+    const topProjects = Array.from(metrics.switchesByProject.entries())
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 5)
+      .map(([projectId, count]) => `${projectId.substring(0, 8)}:${count}`)
+      .join(', ');
+    
+    console.error(`[ProjectManager] Switch metrics: ${metrics.totalSwitches} total switches, top projects: ${topProjects}`);
+  }
+
+  /**
+   * Get project switching metrics (for debugging/monitoring)
+   */
+  getSwitchMetrics(): {
+    totalSwitches: number;
+    switchesByProject: Record<string, number>;
+    averageSwitchInterval: number;
+    recentSwitches: Array<{
+      timestamp: number;
+      fromProjectId: string | null;
+      toProjectId: string | null;
+      duration: number;
+    }>;
+  } {
+    const metrics = this.switchMetrics;
+    const history = metrics.switchHistory;
+    const averageSwitchInterval = history.length > 1 
+      ? history.reduce((sum, entry, i) => {
+          if (i === 0) return sum;
+          return sum + (entry.timestamp - history[i-1].timestamp);
+        }, 0) / (history.length - 1)
+      : 0;
+    
+    return {
+      totalSwitches: metrics.totalSwitches,
+      switchesByProject: Object.fromEntries(metrics.switchesByProject),
+      averageSwitchInterval,
+      recentSwitches: history.slice(-10) // Last 10 switches
+    };
+  }
+
+  /**
+   * Get the active project ID
+   */
+  getActiveProjectId(): string | undefined {
+    return this.activeProjectId;
+  }
+
+  /**
+   * Get the active project context
+   */
+  getActiveProject(): ProjectContext | undefined {
+    if (!this.activeProjectId) {
+      return undefined;
+    }
+    return this.projects.get(this.activeProjectId);
   }
 
   /**

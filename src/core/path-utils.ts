@@ -1,5 +1,5 @@
 import { join, normalize, sep, resolve } from 'path';
-import { access, stat, mkdir } from 'fs/promises';
+import { access, stat, mkdir, readdir } from 'fs/promises';
 import { constants } from 'fs';
 
 export class PathUtils {
@@ -54,6 +54,10 @@ export class PathUtils {
 
   static getTemplatesPath(projectPath: string): string {
     return this.safeJoin(projectPath, '.spec-workflow', 'templates');
+  }
+
+  static getScriptsPath(projectPath: string): string {
+    return this.safeJoin(projectPath, '.specify', 'scripts', 'bash');
   }
 
   static getAgentsPath(projectPath: string): string {
@@ -184,4 +188,51 @@ export async function ensureWorkflowDirectory(projectPath: string): Promise<stri
   }
   
   return workflowRoot;
+}
+
+export async function detectProjectType(projectPath: string): Promise<'spec-kit' | 'spec-workflow-mcp' | null> {
+  try {
+    // First check for spec-kit indicator (.specify folder)
+    const specifyPath = join(projectPath, '.specify');
+    try {
+      await access(specifyPath, constants.F_OK);
+      const stats = await stat(specifyPath);
+      if (stats.isDirectory()) {
+        return 'spec-kit';
+      }
+    } catch {
+      // .specify doesn't exist with exact case, check case-insensitively on Windows/macOS
+      if (process.platform !== 'linux') {
+        try {
+          const entries = await readdir(projectPath, { withFileTypes: true });
+          const specifyEntry = entries.find(entry => 
+            entry.isDirectory() && entry.name.toLowerCase() === '.specify'
+          );
+          if (specifyEntry) {
+            return 'spec-kit';
+          }
+        } catch {
+          // Ignore errors when checking case-insensitively
+        }
+      }
+    }
+
+    // Check for spec-workflow-mcp indicator (.spec-workflow folder)
+    const specWorkflowPath = join(projectPath, '.spec-workflow');
+    try {
+      await access(specWorkflowPath, constants.F_OK);
+      const stats = await stat(specWorkflowPath);
+      if (stats.isDirectory()) {
+        return 'spec-workflow-mcp';
+      }
+    } catch {
+      // .spec-workflow doesn't exist or isn't accessible
+    }
+
+    // Neither project type detected
+    return null;
+  } catch (error) {
+    // If there's any error accessing the directory, return null
+    return null;
+  }
 }

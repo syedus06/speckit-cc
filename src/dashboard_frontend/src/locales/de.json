@@ -52,6 +52,38 @@
     "title": "Weitere Features kommen bald",
     "description": "Wir arbeiten an zusätzlichen Analysen und Einblicken für Ihren Entwicklungsworkflow. Bleiben Sie dran für Updates!"
   },
+  "projects": {
+    "title": "Projekte",
+    "subtitle": "Erkannte spec-kit und Workflow-Projekte",
+    "loading": "Projekte werden geladen...",
+    "scanning": "Scannen...",
+    "scan": "Projekte scannen",
+    "empty": {
+      "title": "Keine Projekte gefunden",
+      "description": "Konfigurieren Sie die SPECKIT_ROOT_DIR Umgebungsvariable und scannen Sie Projekte."
+    },
+    "error": {
+      "title": "Fehler beim Laden der Projekte"
+    },
+    "retry": "Erneut versuchen",
+    "specs": "Spezifikationen",
+    "agents": "Agenten",
+    "constitution": "Verfassung",
+    "lastScanned": "Zuletzt gescannt",
+    "switchProject": "Projekt wechseln",
+    "activeProject": "Aktives Projekt",
+    "recentProjects": "Kürzliche Projekte",
+    "otherProjects": "Andere Projekte",
+    "noRecentProjects": "Keine kürzlichen Projekte",
+    "projectSwitched": "Zu Projekt gewechselt: {{projectName}}",
+    "projectSwitchError": "Fehler beim Projektwechsel",
+    "confirmProjectSwitch": {
+      "title": "Projekt wechseln",
+      "message": "Sind Sie sicher, dass Sie zu Projekt '{{projectName}}' wechseln möchten? Dies ändert Ihren aktiven Projektkontext.",
+      "confirm": "Projekt wechseln",
+      "cancel": "Im aktuellen Projekt bleiben"
+    }
+  },
   "links": {
     "npm": "npm-Paket",
     "github": "GitHub"
@@ -458,43 +490,12 @@
     "taskBadge": "Aufgabe"
   },
   "volumeControl": {
-    "mute": "Benachrichtigungen stumm schalten",
-    "enable": "Benachrichtigungstöne aktivieren",
-    "volumeLevel": "Lautstärke: {{percentage}}%"
-  },
-  "settings": {
-    "title": "Einstellungen",
-    "description": "Verwalten Sie automatisierte Bereinigungsaufträge für alle verbundenen Projekte",
-    "section": {
-      "automatedCleanup": "Automatische Bereinigung",
-      "automatedCleanupDesc": "Automatisches Löschen alter Genehmigungsdatensätze, Spezifikationen und archivierter Spezifikationen basierend auf einem Zeitplan. Konfigurieren Sie Bereinigungsvorgänge so, dass sie regelmäßig über alle verbundenen Projekte hinweg ausgeführt werden."
-    },
-    "addJob": "Auftrag hinzufügen",
-    "loading": "Aufträge werden geladen...",
-    "noJobs": "Keine Automatisierungsaufträge",
-    "noJobsDesc": "Erstellen Sie Ihren ersten Automatisierungsauftrag",
-    "createFirst": "Ersten Auftrag erstellen",
-    "addNewJob": "Neuen Auftrag hinzufügen",
-    "editJob": "Auftrag bearbeiten",
-    "deleteJob": "Auftrag löschen",
-    "deleteConfirm": "Möchten Sie diesen Automatisierungsauftrag wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
-    "lastRun": "Letzte Ausführung",
-    "schedule": "Zeitplan",
-    "runNow": "Jetzt ausführen",
-    "running": "Läuft...",
-    "edit": "Bearbeiten",
-    "delete": "Löschen",
-    "cancel": "Abbrechen",
-    "close": "Schließen",
-    "jobDescription": "Löschen Sie Datensätze, die älter als {{days}} Tage sind, nach Zeitplan: {{schedule}}"
+    "mute": "Benachrichtigungen stumm schalten"
   },
   "changelog": {
-    "viewChangelog": "Änderungsprotokoll anzeigen",
-    "modal": {
-      "title": "Änderungsprotokoll",
-      "version": "Version",
-      "loading": "Änderungsprotokoll wird geladen...",
-      "notFound": "Änderungsprotokoll für diese Version nicht gefunden"
-    }
+    "title": "Änderungsprotokoll",
+    "version": "Version",
+    "loading": "Änderungsprotokoll wird geladen...",
+    "notFound": "Änderungsprotokoll für diese Version nicht gefunden"
   }
 }

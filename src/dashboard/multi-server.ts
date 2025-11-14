@@ -1,4 +1,4 @@
-import fastify, { FastifyInstance } from 'fastify';
+import fastify, { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import fastifyStatic from '@fastify/static';
 import fastifyWebsocket from '@fastify/websocket';
 import { join, dirname, basename, resolve } from 'path';
@@ -12,8 +12,10 @@ import { parseTasksFromMarkdown } from '../core/task-parser.js';
 import { ProjectManager } from './project-manager.js';
 import { JobScheduler } from './job-scheduler.js';
 import { ImplementationLogManager } from './implementation-log-manager.js';
+import { ProjectRegistry } from '../core/project-registry.js';
+import { SpecKitParser } from '../core/parser.js';
 import { DashboardSessionManager } from '../core/dashboard-session.js';
-import { SpecKitRoutes } from './speckit-routes.js';
+import { isWorkflowProject } from '../types.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -33,7 +35,7 @@ export class MultiProjectDashboardServer {
   private projectManager: ProjectManager;
   private jobScheduler: JobScheduler;
   private sessionManager: DashboardSessionManager;
-  private specKitRoutes: SpecKitRoutes | null = null;
+  private projectRegistry: ProjectRegistry;
   private options: MultiDashboardOptions;
   private actualPort: number = 0;
   private clients: Set<WebSocketConnection> = new Set();
@@ -44,6 +46,8 @@ export class MultiProjectDashboardServer {
     this.projectManager = new ProjectManager();
     this.jobScheduler = new JobScheduler(this.projectManager);
     this.sessionManager = new DashboardSessionManager();
+    this.projectRegistry = new ProjectRegistry();
+    this.projectRegistry.setServer(this);
     this.app = fastify({ logger: false });
   }
 
@@ -97,7 +101,7 @@ export class MultiProjectDashboardServer {
         // Send initial state for the requested project
         if (projectId) {
           const project = self.projectManager.getProject(projectId);
-          if (project) {
+          if (project && isWorkflowProject(project)) {
             Promise.all([
               project.parser.getAllSpecs(),
               project.approvalStorage.getAllPendingApprovals()
@@ -145,7 +149,7 @@ export class MultiProjectDashboardServer {
 
               // Send initial data for new subscription
               const project = self.projectManager.getProject(msg.projectId);
-              if (project) {
+              if (project && isWorkflowProject(project)) {
                 Promise.all([
                   project.parser.getAllSpecs(),
                   project.approvalStorage.getAllPendingApprovals()
@@ -173,7 +177,7 @@ export class MultiProjectDashboardServer {
 
     // Serve Claude icon as favicon
     this.app.get('/favicon.ico', async (request, reply) => {
-      return reply.sendFile('claude-icon.svg');
+      return reply.sendFile('claude-icon.svg', join(__dirname, 'public'));
     });
 
     // Setup project manager event handlers
@@ -203,6 +207,22 @@ export class MultiProjectDashboardServer {
     // Open browser if requested
     if (this.options.autoOpen) {
       await open(dashboardUrl);
+    }
+
+    // Automatically scan for spec-kit projects if SPECKIT_ROOT_DIR is set
+    try {
+      const { getRootDirectory } = await import('../config.js');
+      const rootResult = getRootDirectory();
+
+      if (rootResult.rootDir) {
+        console.log(`[Dashboard] Auto-scanning ${rootResult.rootDir} for spec-kit projects...`);
+        this.projectRegistry.setRootDirectory(rootResult.rootDir);
+        await this.projectRegistry.startWatching();
+        await this.projectRegistry.scanRootDirectory();
+        console.log(`[Dashboard] Auto-scan completed`);
+      }
+    } catch (error) {
+      console.warn(`[Dashboard] Auto-scan failed:`, error);
     }
 
     return dashboardUrl;
@@ -252,7 +272,7 @@ export class MultiProjectDashboardServer {
     this.projectManager.on('approval-change', async (event) => {
       const { projectId } = event;
       const project = this.projectManager.getProject(projectId);
-      if (project) {
+      if (project && isWorkflowProject(project)) {
         const approvals = await project.approvalStorage.getAllPendingApprovals();
         this.broadcastToProject(projectId, {
           type: 'approval-update',
@@ -261,17 +281,537 @@ export class MultiProjectDashboardServer {
         });
       }
     });
+
+    // Broadcast agent changes
+    this.projectManager.on('agent-change', (event) => {
+      const { projectId, agentName, commandCount } = event;
+      this.broadcastToProject(projectId, {
+        type: 'agent.detected',
+        projectId,
+        data: {
+          agentName,
+          commandCount,
+          timestamp: new Date().toISOString()
+        }
+      });
+    });
   }
 
   private registerApiRoutes() {
-    // Register SpecKit routes for spec-kit project support
-    if (this.specKitRoutes) {
-      this.specKitRoutes.registerRoutes();
-    }
+    const self = this;
+
+    // Get all projects with optional type filtering and stats
+    this.app.get('/api/projects', async (request, reply) => {
+      const query = request.query as { type?: string; includeStats?: string };
+      const typeFilter = query.type as 'spec-kit' | 'spec-workflow-mcp' | undefined;
+      const includeStats = query.includeStats === 'true';
+
+      try {
+        let projects = self.projectRegistry.getAllProjectContexts();
+
+        // Apply type filter if specified
+        if (typeFilter) {
+          projects = projects.filter(project => project.projectType === typeFilter);
+        }
+
+        // Include stats if requested
+        if (includeStats) {
+          const stats = {
+            total: projects.length,
+            byType: {
+              'spec-kit': projects.filter(p => p.projectType === 'spec-kit').length,
+              'spec-workflow-mcp': projects.filter(p => p.projectType === 'spec-workflow-mcp').length
+            },
+            lastScanned: new Date().toISOString()
+          };
+
+          return {
+            projects,
+            stats
+          };
+        }
+
+        return { projects };
+      } catch (error: any) {
+        return reply.code(500).send({ error: `Failed to get projects: ${error.message}` });
+      }
+    });
+
+    // Trigger manual root directory scan
+    this.app.post('/api/scan', async (request, reply) => {
+      const body = (request.body as { force?: boolean }) || {};
+      const force = body.force === true;
+
+      try {
+        // Get root directory from config
+        const { getRootDirectory } = await import('../config.js');
+        const rootResult = getRootDirectory();
+
+        if (!rootResult.rootDir) {
+          return reply.code(400).send({ error: rootResult.error || 'Root directory not configured' });
+        }
+
+        // Set root directory in registry
+        self.projectRegistry.setRootDirectory(rootResult.rootDir);
+
+        // Start watching for filesystem changes
+        await self.projectRegistry.startWatching();
+
+        // Perform scan
+        await self.projectRegistry.scanRootDirectory();
+
+        // Get updated project list
+        const projects = self.projectRegistry.getAllProjectContexts();
+
+        return {
+          success: true,
+          message: 'Root directory scan completed',
+          projectsCount: projects.length,
+          rootDirectory: rootResult.rootDir
+        };
+      } catch (error: any) {
+        return reply.code(500).send({ error: `Failed to scan root directory: ${error.message}` });
+      }
+    });
+
+    // Get full project details including specs array
+    this.app.get('/api/projects/:projectId', async (request: any, reply: any) => {
+      const { projectId } = request.params as { projectId: string };
+
+      try {
+        const project = self.projectRegistry.getProjectContext(projectId);
+        if (!project) {
+          return reply.code(404).send({ error: 'Project not found' });
+        }
+
+        // For spec-kit projects, get additional details
+        if (project.projectType === 'spec-kit') {
+          const parser = new (await import('../core/parser.js')).SpecKitParser(project.projectPath);
+          const metadata = await parser.parseProjectMetadata();
+
+          // Broadcast agent detection events for real-time updates
+          metadata.agents.forEach((agent) => {
+            self.broadcastAgentDetected(projectId, agent.agentName, agent.commandCount);
+          });
+
+          return {
+            ...project,
+            agents: metadata.agents,
+            constitution: metadata.constitution,
+            templates: metadata.templates,
+            specs: metadata.specs
+          };
+        }
+
+        // For workflow projects, return basic context
+        return project;
+      } catch (error: any) {
+        return reply.code(500).send({ error: `Failed to get project details: ${error.message}` });
+      }
+    });
+
+    // Get detailed spec directory information
+    this.app.get('/api/projects/:projectId/specs/:specId', async (request: any, reply: any) => {
+      const { projectId, specId } = request.params as { projectId: string; specId: string };
+
+      try {
+        const project = self.projectRegistry.getProjectContext(projectId);
+        if (!project) {
+          return reply.code(404).send({ error: 'Project not found' });
+        }
+
+        if (project.projectType !== 'spec-kit') {
+          return reply.code(400).send({ error: 'Project is not a spec-kit project' });
+        }
+
+        const parser = project.parser as SpecKitParser;
+        const specs = await parser.getSpecs();
+
+        // Find the spec directory by feature number (specId)
+        const spec = specs.find(s => s.featureNumber === specId);
+        if (!spec) {
+          return reply.code(404).send({ error: 'Spec directory not found' });
+        }
+
+        // Get detailed information for this spec
+        const specPath = spec.directoryPath;
+        const files = await parser.detectSpecFiles(specPath);
+        const subdirectories = await parser.detectSpecSubdirectories(specPath);
+
+        return {
+          ...spec,
+          files,
+          subdirectories
+        };
+      } catch (error: any) {
+        return reply.code(500).send({ error: `Failed to get spec details: ${error.message}` });
+      }
+    });
+
+    // Get constitution for spec-kit project
+    this.app.get('/api/projects/:projectId/constitution', async (request: any, reply: any) => {
+      const { projectId } = request.params as { projectId: string };
+
+      try {
+        const project = self.projectRegistry.getProjectContext(projectId);
+        if (!project) {
+          return reply.code(404).send({ error: 'Project not found' });
+        }
+
+        if (project.projectType !== 'spec-kit') {
+          return reply.code(400).send({ error: 'Project is not a spec-kit project' });
+        }
+
+        const parser = project.parser as SpecKitParser;
+        const constitution = await parser.parseConstitution();
+
+        if (!constitution) {
+          return reply.code(404).send({ error: 'Constitution not found' });
+        }
+
+        return constitution;
+      } catch (error: any) {
+        return reply.code(500).send({ error: `Failed to get constitution: ${error.message}` });
+      }
+    });
+
+    // Get templates for spec-kit project
+    this.app.get('/api/projects/:projectId/templates', async (request: any, reply: any) => {
+      const { projectId } = request.params as { projectId: string };
+
+      try {
+        const project = self.projectRegistry.getProjectContext(projectId);
+        if (!project) {
+          return reply.code(404).send({ error: 'Project not found' });
+        }
+
+        if (project.projectType !== 'spec-kit') {
+          return reply.code(400).send({ error: 'Project is not a spec-kit project' });
+        }
+
+        const parser = project.parser as SpecKitParser;
+        const templates = await parser.getTemplates();
+
+        return { templates };
+      } catch (error: any) {
+        return reply.code(500).send({ error: `Failed to get templates: ${error.message}` });
+      }
+    });
+
+    // Get scripts for spec-kit project
+    this.app.get('/api/projects/:projectId/scripts', async (request: any, reply: any) => {
+      const { projectId } = request.params as { projectId: string };
+
+      try {
+        const project = self.projectRegistry.getProjectContext(projectId);
+        if (!project) {
+          return reply.code(404).send({ error: 'Project not found' });
+        }
+
+        if (project.projectType !== 'spec-kit') {
+          return reply.code(400).send({ error: 'Project is not a spec-kit project' });
+        }
+
+        const parser = project.parser as SpecKitParser;
+        const scripts = await parser.getScripts();
+
+        return { scripts };
+      } catch (error: any) {
+        return reply.code(500).send({ error: `Failed to get scripts: ${error.message}` });
+      }
+    });
+
+    // Get agents for spec-kit project
+    this.app.get('/api/projects/:projectId/agents', async (request: any, reply: any) => {
+      const { projectId } = request.params as { projectId: string };
+
+      try {
+        const project = self.projectRegistry.getProjectContext(projectId);
+        if (!project) {
+          return reply.code(404).send({ error: 'Project not found' });
+        }
+
+        if (project.projectType !== 'spec-kit') {
+          return reply.code(400).send({ error: 'Project is not a spec-kit project' });
+        }
+
+        const parser = project.parser as SpecKitParser;
+        const agents = await parser.discoverAIAgents();
+
+        return { agents };
+      } catch (error: any) {
+        return reply.code(500).send({ error: `Failed to get agents: ${error.message}` });
+      }
+    });
+
+    // Get specs list for spec-kit project
+    this.app.get('/api/projects/:projectId/specs/list', async (request: any, reply: any) => {
+      const { projectId } = request.params as { projectId: string };
+
+      try {
+        const project = self.projectRegistry.getProjectContext(projectId);
+        if (!project) {
+          return reply.code(404).send({ error: 'Project not found' });
+        }
+
+        if (project.projectType !== 'spec-kit') {
+          return reply.code(400).send({ error: 'Project is not a spec-kit project' });
+        }
+
+        const parser = project.parser as SpecKitParser;
+        const specs = await parser.getSpecs();
+
+        return { specs };
+      } catch (error: any) {
+        return reply.code(500).send({ error: `Failed to get specs: ${error.message}` });
+      }
+    });
+
+    // Get tasks.md content for a specific spec
+    this.app.get('/api/projects/:projectId/specs/:featureNumber/tasks', async (request: any, reply: any) => {
+      const { projectId, featureNumber } = request.params as { projectId: string; featureNumber: string };
+
+      try {
+        const project = self.projectRegistry.getProjectContext(projectId);
+        if (!project) {
+          return reply.code(404).send({ error: 'Project not found' });
+        }
+
+        if (project.projectType !== 'spec-kit') {
+          return reply.code(400).send({ error: 'Project is not a spec-kit project' });
+        }
+
+        const parser = project.parser as SpecKitParser;
+
+        // Get all specs to find the directory path for this feature
+        const specs = await parser.getSpecs();
+        const spec = specs.find(s => s.directoryName === featureNumber || s.featureNumber === featureNumber);
+
+        if (!spec) {
+          return reply.code(404).send({ error: 'Spec not found' });
+        }
+
+        const tasksPath = join(spec.directoryPath, 'tasks.md');
+
+        // Check if tasks file exists
+        try {
+          await fs.access(tasksPath);
+        } catch {
+          return reply.code(404).send({ error: 'Tasks file not found' });
+        }
+
+        const content = await fs.readFile(tasksPath, 'utf-8');
+        return { content };
+      } catch (error: any) {
+        return reply.code(500).send({ error: `Failed to get tasks: ${error.message}` });
+      }
+    });
+
+    // Update tasks.md content for a specific spec
+    this.app.put('/api/projects/:projectId/specs/:featureNumber/tasks', async (request: any, reply: any) => {
+      const { projectId, featureNumber } = request.params as { projectId: string; featureNumber: string };
+      const { content } = request.body as { content: string };
+
+      try {
+        const project = self.projectRegistry.getProjectContext(projectId);
+        if (!project) {
+          return reply.code(404).send({ error: 'Project not found' });
+        }
+
+        if (project.projectType !== 'spec-kit') {
+          return reply.code(400).send({ error: 'Project is not a spec-kit project' });
+        }
+
+        const parser = project.parser as SpecKitParser;
+        const specs = await parser.getSpecs();
+        const spec = specs.find(s => s.directoryName === featureNumber || s.featureNumber === featureNumber);
+
+        if (!spec) {
+          return reply.code(404).send({ error: 'Spec not found' });
+        }
+
+        const tasksPath = join(spec.directoryPath, 'tasks.md');
+        await fs.writeFile(tasksPath, content, 'utf-8');
+
+        return { success: true, message: 'Tasks updated successfully' };
+      } catch (error: any) {
+        return reply.code(500).send({ error: `Failed to update tasks: ${error.message}` });
+      }
+    });
+
+    // Toggle task completion status
+    this.app.patch('/api/projects/:projectId/specs/:featureNumber/tasks/toggle', async (request: any, reply: any) => {
+      const { projectId, featureNumber } = request.params as { projectId: string; featureNumber: string };
+      const { taskId } = request.body as { taskId: string };
+
+      try {
+        const project = self.projectRegistry.getProjectContext(projectId);
+        if (!project) {
+          return reply.code(404).send({ error: 'Project not found' });
+        }
+
+        if (project.projectType !== 'spec-kit') {
+          return reply.code(400).send({ error: 'Project is not a spec-kit project' });
+        }
+
+        const parser = project.parser as SpecKitParser;
+        const specs = await parser.getSpecs();
+        const spec = specs.find(s => s.directoryName === featureNumber || s.featureNumber === featureNumber);
+
+        if (!spec) {
+          return reply.code(404).send({ error: 'Spec not found' });
+        }
+
+        const tasksPath = join(spec.directoryPath, 'tasks.md');
+        let content = await fs.readFile(tasksPath, 'utf-8');
+
+        // Toggle task completion by finding the task ID and flipping its checkbox
+        const lines = content.split('\n');
+        let modified = false;
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          // Check for both bold format **T001** and plain format T001
+          if (line.match(/^-\s*\[(x| )\]/i) && (line.includes(`**${taskId}**`) || line.match(new RegExp(`\\[(?:x| )\\]\\s*${taskId}(?:\\s|\\[|$)`, 'i')))) {
+            if (line.match(/\[x\]/i)) {
+              lines[i] = line.replace(/\[x\]/i, '[ ]');
+            } else {
+              lines[i] = line.replace(/\[ \]/i, '[x]');
+            }
+            modified = true;
+            break;
+          }
+        }
+
+        if (!modified) {
+          return reply.code(404).send({ error: 'Task not found' });
+        }
+
+        content = lines.join('\n');
+        await fs.writeFile(tasksPath, content, 'utf-8');
+
+        return { success: true, message: 'Task status toggled successfully' };
+      } catch (error: any) {
+        return reply.code(500).send({ error: `Failed to toggle task: ${error.message}` });
+      }
+    });
+
+    // Assign task to CLI agent
+    this.app.post('/api/projects/:projectId/specs/:featureNumber/tasks/assign', async (request: any, reply: any) => {
+      const { projectId, featureNumber } = request.params as { projectId: string; featureNumber: string };
+      const { taskId, agentName, command } = request.body as { taskId: string; agentName: string; command?: string };
+
+      try {
+        const project = self.projectRegistry.getProjectContext(projectId);
+        if (!project) {
+          return reply.code(404).send({ error: 'Project not found' });
+        }
+
+        if (project.projectType !== 'spec-kit') {
+          return reply.code(400).send({ error: 'Project is not a spec-kit project' });
+        }
+
+        const parser = project.parser as SpecKitParser;
+        const specs = await parser.getSpecs();
+        const spec = specs.find(s => s.directoryName === featureNumber || s.featureNumber === featureNumber);
+
+        if (!spec) {
+          return reply.code(404).send({ error: 'Spec not found' });
+        }
+
+        const tasksPath = join(spec.directoryPath, 'tasks.md');
+        let content = await fs.readFile(tasksPath, 'utf-8');
+
+        // Add assignment annotation to task
+        const lines = content.split('\n');
+        let modified = false;
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          // Check for both bold format **T001** and plain format T001
+          if (line.match(/^-\s*\[(x| )\]/i) && (line.includes(`**${taskId}**`) || line.match(new RegExp(`\\[(?:x| )\\]\\s*${taskId}(?:\\s|\\[|$)`, 'i')))) {
+            // Remove existing assignment if any
+            lines[i] = line.replace(/\s*\[ASSIGNED:\s*[^\]]+\]/g, '');
+            // Add new assignment
+            lines[i] = `${lines[i]} [ASSIGNED: ${agentName}${command ? ` - ${command}` : ''}]`;
+            modified = true;
+            break;
+          }
+        }
+
+        if (!modified) {
+          return reply.code(404).send({ error: 'Task not found' });
+        }
+
+        content = lines.join('\n');
+        await fs.writeFile(tasksPath, content, 'utf-8');
+
+        return { success: true, message: 'Task assigned successfully' };
+      } catch (error: any) {
+        return reply.code(500).send({ error: `Failed to assign task: ${error.message}` });
+      }
+    });
 
     // Projects list
     this.app.get('/api/projects/list', async () => {
-      return this.projectManager.getProjectsList();
+      // Get both workflow projects and spec-kit projects
+      const workflowProjects = this.projectManager.getProjectsList().map(p => ({
+        ...p,
+        projectType: 'spec-workflow-mcp' as const
+      }));
+      const allContexts = this.projectRegistry.getAllProjectContexts();
+
+      // Combine both types of projects
+      const allProjects = [
+        ...workflowProjects,
+        ...allContexts.filter(ctx => ctx.projectType === 'spec-kit').map(ctx => ({
+          projectId: ctx.projectId,
+          projectName: ctx.projectName,
+          projectPath: ctx.projectPath,
+          projectType: 'spec-kit' as const
+        }))
+      ];
+
+      return allProjects;
+    });
+
+    // Get active project
+    this.app.get('/api/projects/active', async () => {
+      const activeProjectId = this.projectManager.getActiveProjectId();
+      if (!activeProjectId) {
+        return { activeProjectId: null };
+      }
+
+      const activeProject = this.projectManager.getActiveProject();
+      return {
+        activeProjectId,
+        activeProject: activeProject ? {
+          projectId: activeProject.projectId,
+          projectName: activeProject.projectName,
+          projectPath: activeProject.projectPath
+        } : null
+      };
+    });
+
+    // Set active project
+    this.app.post('/api/projects/active', async (request, reply) => {
+      const { projectId } = request.body as { projectId: string | null };
+      if (projectId === null || projectId === undefined || projectId.trim() === '') {
+        // Clear active project
+        this.projectManager.setActiveProject('');
+        return { success: true, activeProjectId: null };
+      }
+
+      if (typeof projectId !== 'string') {
+        return reply.code(400).send({ error: 'projectId must be a string or null' });
+      }
+
+      const success = this.projectManager.setActiveProject(projectId);
+      if (!success) {
+        return reply.code(404).send({ error: 'Project not found' });
+      }
+
+      return { success: true, activeProjectId: projectId };
     });
 
     // Add project manually
@@ -338,18 +878,18 @@ export class MultiProjectDashboardServer {
     });
 
     // Get spec details
-    this.app.get('/api/projects/:projectId/specs/:name', async (request, reply) => {
-      const { projectId, name } = request.params as { projectId: string; name: string };
-      const project = this.projectManager.getProject(projectId);
-      if (!project) {
-        return reply.code(404).send({ error: 'Project not found' });
-      }
-      const spec = await project.parser.getSpec(name);
-      if (!spec) {
-        return reply.code(404).send({ error: 'Spec not found' });
-      }
-      return spec;
-    });
+    // this.app.get('/api/projects/:projectId/specs/:name', async (request, reply) => {
+    //   const { projectId, name } = request.params as { projectId: string; name: string };
+    //   const project = this.projectManager.getProject(projectId);
+    //   if (!project) {
+    //     return reply.code(404).send({ error: 'Project not found' });
+    //   }
+    //   const spec = await project.parser.getSpec(name);
+    //   if (!spec) {
+    //     return reply.code(404).send({ error: 'Spec not found' });
+    //   }
+    //   return spec;
+    // });
 
     // Get all spec documents
     this.app.get('/api/projects/:projectId/specs/:name/all', async (request, reply) => {
@@ -420,6 +960,10 @@ export class MultiProjectDashboardServer {
         return reply.code(404).send({ error: 'Project not found' });
       }
 
+      if (!isWorkflowProject(project)) {
+        return reply.code(400).send({ error: 'Archive operations are only supported for workflow projects' });
+      }
+
       try {
         await project.archiveService.archiveSpec(name);
         return { success: true, message: `Spec '${name}' archived successfully` };
@@ -437,6 +981,10 @@ export class MultiProjectDashboardServer {
         return reply.code(404).send({ error: 'Project not found' });
       }
 
+      if (!isWorkflowProject(project)) {
+        return reply.code(400).send({ error: 'Unarchive operations are only supported for workflow projects' });
+      }
+
       try {
         await project.archiveService.unarchiveSpec(name);
         return { success: true, message: `Spec '${name}' unarchived successfully` };
@@ -452,6 +1000,9 @@ export class MultiProjectDashboardServer {
       if (!project) {
         return reply.code(404).send({ error: 'Project not found' });
       }
+      if (!isWorkflowProject(project)) {
+        return reply.code(400).send({ error: 'Approvals are only supported for workflow projects' });
+      }
       return await project.approvalStorage.getAllPendingApprovals();
     });
 
@@ -460,7 +1011,10 @@ export class MultiProjectDashboardServer {
       const { projectId, id } = request.params as { projectId: string; id: string };
       const project = this.projectManager.getProject(projectId);
       if (!project) {
-        return reply.code(404).send({ error: 'Project not found' });
+        return reply.code(404).send({ error: 'Approval not found or no file path' });
+      }
+      if (!isWorkflowProject(project)) {
+        return reply.code(400).send({ error: 'Approvals are only supported for workflow projects' });
       }
 
       try {
@@ -516,6 +1070,10 @@ export class MultiProjectDashboardServer {
         return reply.code(404).send({ error: 'Project not found' });
       }
 
+      if (!isWorkflowProject(project)) {
+        return reply.code(400).send({ error: 'Approvals are only supported for workflow projects' });
+      }
+
       const validActions = ['approve', 'reject', 'needs-revision'];
       if (!validActions.includes(action)) {
         return reply.code(400).send({ error: 'Invalid action' });
@@ -544,6 +1102,9 @@ export class MultiProjectDashboardServer {
       if (!project) {
         return reply.code(404).send({ error: 'Project not found' });
       }
+      if (!isWorkflowProject(project)) {
+        return reply.code(400).send({ error: 'Approvals are only supported for workflow projects' });
+      }
       try {
         const snapshots = await project.approvalStorage.getSnapshots(id);
         return snapshots;
@@ -558,6 +1119,9 @@ export class MultiProjectDashboardServer {
       const project = this.projectManager.getProject(projectId);
       if (!project) {
         return reply.code(404).send({ error: 'Project not found' });
+      }
+      if (!isWorkflowProject(project)) {
+        return reply.code(400).send({ error: 'Approvals are only supported for workflow projects' });
       }
       try {
         const versionNum = parseInt(version, 10);
@@ -583,6 +1147,9 @@ export class MultiProjectDashboardServer {
       const project = this.projectManager.getProject(projectId);
       if (!project) {
         return reply.code(404).send({ error: 'Project not found' });
+      }
+      if (!isWorkflowProject(project)) {
+        return reply.code(400).send({ error: 'Approvals are only supported for workflow projects' });
       }
 
       if (!from) {
@@ -619,6 +1186,9 @@ export class MultiProjectDashboardServer {
       const project = this.projectManager.getProject(projectId);
       if (!project) {
         return reply.code(404).send({ error: 'Project not found' });
+      }
+      if (!isWorkflowProject(project)) {
+        return reply.code(400).send({ error: 'Approvals are only supported for workflow projects' });
       }
       try {
         await project.approvalStorage.captureSnapshot(id, 'manual');
@@ -1086,6 +1656,65 @@ export class MultiProjectDashboardServer {
     } catch (error) {
       console.error('Error broadcasting implementation log update:', error);
     }
+  }
+
+  /**
+   * Broadcast project discovered event for spec-kit projects
+   */
+  broadcastProjectDiscovered(projectId: string, projectName: string, projectType: 'spec-kit' | 'spec-workflow-mcp', projectPath: string): void {
+    this.broadcastToAll({
+      type: 'project.discovered',
+      data: {
+        projectId,
+        projectName,
+        projectType,
+        projectPath,
+        timestamp: new Date().toISOString()
+      }
+    });
+  }
+
+  /**
+   * Broadcast agent detected event for spec-kit projects
+   */
+  broadcastAgentDetected(projectId: string, agentName: string, commandCount: number): void {
+    this.broadcastToProject(projectId, {
+      type: 'agent.detected',
+      data: {
+        projectId,
+        agentName,
+        commandCount,
+        timestamp: new Date().toISOString()
+      }
+    });
+  }
+
+  /**
+   * Broadcast project removed event for spec-kit projects
+   */
+  broadcastProjectRemoved(projectId: string, projectName: string): void {
+    this.broadcastToAll({
+      type: 'project.removed',
+      data: {
+        projectId,
+        projectName,
+        timestamp: new Date().toISOString()
+      }
+    });
+  }
+
+  /**
+   * Broadcast project updated event for spec-kit projects
+   */
+  broadcastProjectUpdated(projectId: string, changedPaths: string[]): void {
+    this.broadcastToAll({
+      type: 'project.updated',
+      data: {
+        projectId,
+        changedPaths,
+        timestamp: new Date().toISOString()
+      }
+    });
   }
 
   async stop() {

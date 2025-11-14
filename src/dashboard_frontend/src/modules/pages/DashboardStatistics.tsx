@@ -2,12 +2,15 @@ import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApi } from '../api/api';
 import { useWs } from '../ws/WebSocketProvider';
+import { useProjects } from '../projects/ProjectProvider';
+import { SpecKitDashboard } from './SpecKitDashboard';
 
 function Content() {
   const { t } = useTranslation();
   const { initial } = useWs();
   const { specs, approvals, reloadAll } = useApi();
   const { info } = useApi();
+  const { currentProject } = useProjects();
 
   useEffect(() => {
     reloadAll();
@@ -16,6 +19,12 @@ function Content() {
     if (!initial) reloadAll();
   }, [initial, reloadAll]);
 
+  // If this is a spec-kit project, show the spec-kit dashboard
+  if (currentProject?.projectType === 'spec-kit') {
+    return <SpecKitDashboard />;
+  }
+
+  // Otherwise, show the workflow dashboard
   const totalSpecs = specs.length;
   const totalTasks = specs.reduce((acc, s) => acc + (s.taskProgress?.total || 0), 0);
   const completedTasks = specs.reduce((acc, s) => acc + (s.taskProgress?.completed || 0), 0);

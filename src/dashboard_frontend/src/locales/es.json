@@ -52,6 +52,38 @@
     "title": "Más Funciones Próximamente",
     "description": "Estamos trabajando en análisis e información adicional para su flujo de trabajo de desarrollo. ¡Manténgase atento a las actualizaciones!"
   },
+  "projects": {
+    "title": "Proyectos",
+    "subtitle": "Proyectos spec-kit y de flujo de trabajo detectados",
+    "loading": "Cargando proyectos...",
+    "scanning": "Escaneando...",
+    "scan": "Escanear Proyectos",
+    "empty": {
+      "title": "No se encontraron proyectos",
+      "description": "Configure la variable de entorno SPECKIT_ROOT_DIR y escanee proyectos."
+    },
+    "error": {
+      "title": "Error al Cargar Proyectos"
+    },
+    "retry": "Reintentar",
+    "specs": "Especificaciones",
+    "agents": "Agentes",
+    "constitution": "Constitución",
+    "lastScanned": "Último escaneo",
+    "switchProject": "Cambiar proyecto",
+    "activeProject": "Proyecto activo",
+    "recentProjects": "Proyectos recientes",
+    "otherProjects": "Otros proyectos",
+    "noRecentProjects": "No hay proyectos recientes",
+    "projectSwitched": "Cambiado a proyecto: {{projectName}}",
+    "projectSwitchError": "Error al cambiar proyecto",
+    "confirmProjectSwitch": {
+      "title": "Cambiar Proyecto",
+      "message": "¿Está seguro de que desea cambiar al proyecto '{{projectName}}'? Esto cambiará su contexto de proyecto activo.",
+      "confirm": "Cambiar Proyecto",
+      "cancel": "Permanecer en Proyecto Actual"
+    }
+  },
   "links": {
     "npm": "paquete npm",
     "github": "GitHub"

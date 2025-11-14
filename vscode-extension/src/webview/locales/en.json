@@ -96,6 +96,17 @@
     "noArchivedSpecs": "No archived specifications found",
     "selectSpec": "Select a specification above to view documents"
   },
+  "specVisualization": {
+    "emptySpecsFolder": "Empty specs folder",
+    "specDirectories": "Spec directories",
+    "navigation": {
+      "breadcrumb": "Navigation",
+      "home": "Home",
+      "specs": "Specs",
+      "spec": "Spec {{number}}",
+      "directory": "Directory"
+    }
+  },
   "steering": {
     "title": "Steering Documents",
     "modified": "Modified {{time}}",

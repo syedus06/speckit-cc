@@ -52,6 +52,38 @@
     "title": "更多功能即将推出",
     "description": "我们正在为您的开发工作流添加更多分析和洞察功能。敬请期待更新！"
   },
+  "projects": {
+    "title": "项目",
+    "subtitle": "发现的 spec-kit 和工作流项目",
+    "loading": "正在加载项目...",
+    "scanning": "扫描中...",
+    "scan": "扫描项目",
+    "empty": {
+      "title": "未找到项目",
+      "description": "请设置 SPECKIT_ROOT_DIR 环境变量并扫描项目。"
+    },
+    "error": {
+      "title": "项目加载错误"
+    },
+    "retry": "重试",
+    "specs": "规范",
+    "agents": "代理",
+    "constitution": "宪法",
+    "lastScanned": "最后扫描",
+    "switchProject": "切换项目",
+    "activeProject": "活跃项目",
+    "recentProjects": "最近的项目",
+    "otherProjects": "其他项目",
+    "noRecentProjects": "没有最近的项目",
+    "projectSwitched": "已切换到项目: {{projectName}}",
+    "projectSwitchError": "项目切换失败",
+    "confirmProjectSwitch": {
+      "title": "切换项目",
+      "message": "您确定要切换到 '{{projectName}}' 项目吗？这将更改您的活跃项目上下文。",
+      "confirm": "切换项目",
+      "cancel": "留在当前项目"
+    }
+  },
   "links": {
     "npm": "npm 包",
     "github": "GitHub"

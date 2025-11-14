@@ -4,6 +4,7 @@ export interface Project {
   projectId: string;
   projectName: string;
   projectPath: string;
+  projectType?: 'spec-kit' | 'spec-workflow-mcp';
 }
 
 interface ProjectContextType {

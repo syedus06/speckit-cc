@@ -8,6 +8,7 @@ export interface SpecWorkflowConfig {
   port?: number;
   dashboardOnly?: boolean;
   lang?: string;
+  speckitRootDir?: string; // Root directory for spec-kit project scanning
 }
 
 export interface ConfigLoadResult {
@@ -58,6 +59,13 @@ function validateConfig(config: any): { valid: boolean; error?: string } {
     };
   }
 
+  if (config.speckitRootDir !== undefined && typeof config.speckitRootDir !== 'string') {
+    return {
+      valid: false,
+      error: `Invalid speckitRootDir: must be a string.`
+    };
+  }
+
   return { valid: true };
 }
 
@@ -101,6 +109,10 @@ export function loadConfigFromPath(configPath: string): ConfigLoadResult {
     
     if (parsedConfig.lang !== undefined) {
       config.lang = parsedConfig.lang;
+    }
+
+    if (parsedConfig.speckitRootDir !== undefined) {
+      config.speckitRootDir = expandTilde(parsedConfig.speckitRootDir);
     }
 
     return { 
@@ -177,4 +189,34 @@ export function mergeConfigs(
   });
 
   return merged;
+}
+
+export function getRootDirectory(): { rootDir: string | null; error?: string } {
+  // Check environment variable first
+  const envRootDir = process.env.SPECKIT_ROOT_DIR;
+  if (envRootDir) {
+    const expandedPath = expandTilde(envRootDir);
+    try {
+      // Validate the path exists and is a directory
+      const stats = fs.statSync(expandedPath);
+      if (!stats.isDirectory()) {
+        return {
+          rootDir: null,
+          error: `SPECKIT_ROOT_DIR path is not a directory: ${expandedPath}`
+        };
+      }
+      return { rootDir: expandedPath };
+    } catch (error) {
+      return {
+        rootDir: null,
+        error: `SPECKIT_ROOT_DIR path does not exist or is not accessible: ${expandedPath}`
+      };
+    }
+  }
+
+  // No environment variable set
+  return {
+    rootDir: null,
+    error: 'SPECKIT_ROOT_DIR environment variable not set'
+  };
 }
