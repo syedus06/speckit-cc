@@ -58,6 +58,75 @@ export class SpecKitRoutes {
   private registerFileRoutes() {
     const self = this;
 
+    // List all features with status
+    this.app.get('/api/projects/:projectId/speckit/specs/list', async (request: any, reply: any) => {
+      const { projectId } = request.params;
+
+      try {
+        const project = self.projectManager.getProject(projectId);
+        if (!project) {
+          return reply.code(404).send({ error: 'Project not found' });
+        }
+
+        const features = await self.getSpecKitFeatures(project.projectPath);
+
+        // Enhance features with file existence checks and task progress
+        const enhancedFeatures = await Promise.all(
+          features.map(async (feature) => {
+            const hasSpec = existsSync(join(feature.directoryPath, 'spec.md'));
+            const hasPlan = existsSync(join(feature.directoryPath, 'plan.md'));
+            const hasTasks = existsSync(join(feature.directoryPath, 'tasks.md'));
+            const hasResearch = existsSync(join(feature.directoryPath, 'research.md'));
+            const hasDataModel = existsSync(join(feature.directoryPath, 'data-model.md'));
+            const hasContracts = existsSync(join(feature.directoryPath, 'contracts'));
+
+            let taskProgress = undefined;
+            if (hasTasks) {
+              try {
+                const tasksContent = await readFile(join(feature.directoryPath, 'tasks.md'), 'utf-8');
+                const lines = tasksContent.split('\n');
+                const taskLines = lines.filter(line => line.match(/^-\s*\[(x| |X)\]/i));
+                const total = taskLines.length;
+                const completed = taskLines.filter(line => line.match(/\[(x|X)\]/i)).length;
+                const percentage = total > 0 ? (completed / total) * 100 : 0;
+
+                taskProgress = { total, completed, percentage };
+              } catch (error) {
+                console.error(`Error reading tasks for ${feature.featureNumber}:`, error);
+              }
+            }
+
+            return {
+              ...feature,
+              hasSpec,
+              hasPlan,
+              hasTasks,
+              hasResearch,
+              hasDataModel,
+              hasContracts,
+              taskProgress
+            };
+          })
+        );
+
+        // Calculate next number
+        const numbers = features
+          .map(f => parseInt(f.featureNumber, 10))
+          .filter(n => !isNaN(n));
+        const nextNumber = numbers.length > 0 ? Math.max(...numbers) + 1 : 1;
+        const nextNumberStr = String(nextNumber).padStart(3, '0');
+
+        return {
+          features: enhancedFeatures,
+          nextNumber: nextNumberStr,
+          count: enhancedFeatures.length
+        };
+      } catch (error: any) {
+        console.error(`Error listing features: ${error.message}`);
+        return reply.code(500).send({ error: `Failed to list features: ${error.message}` });
+      }
+    });
+
     // Read spec file (spec.md, plan.md, tasks.md, etc.)
     this.app.get('/api/projects/:projectId/speckit/specs/:featureNumber/files/:fileName', async (request: any, reply: any) => {
       const { projectId, featureNumber, fileName } = request.params;
