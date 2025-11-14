@@ -53,6 +53,7 @@ export class SpecKitRoutes {
     this.registerFileRoutes();
     this.registerWorkflowRoutes();
     this.registerConstitutionRoutes();
+    this.registerContractsRoutes();
   }
 
   private registerFileRoutes() {
@@ -836,6 +837,587 @@ All specs, plans, and tasks must pass constitutional compliance checking:
       } catch (error: any) {
         console.error(`Error validating compliance: ${error.message}`);
         return reply.code(500).send({ error: `Failed to validate compliance: ${error.message}` });
+      }
+    });
+  }
+
+  private registerContractsRoutes() {
+    const self = this;
+
+    // Contract templates
+    const getContractTemplate = (type: 'api' | 'event' | 'schema') => {
+      const templates = {
+        api: `# API Contract: [Endpoint Name]
+
+> Contract for REST API endpoint
+> Version: 1.0.0
+> Last Updated: ${new Date().toISOString().split('T')[0]}
+
+## Endpoint Details
+
+- **Method**: \`GET\` | \`POST\` | \`PUT\` | \`DELETE\`
+- **Path**: \`/api/v1/resource\`
+- **Authentication**: Required | Optional | None
+- **Rate Limit**: X requests per minute
+
+## Request
+
+### Headers
+\`\`\`json
+{
+  "Content-Type": "application/json",
+  "Authorization": "Bearer {token}"
+}
+\`\`\`
+
+### Query Parameters
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| \`id\` | string | Yes | Resource identifier |
+| \`limit\` | number | No | Result limit (default: 20) |
+
+### Request Body
+\`\`\`json
+{
+  "name": "string",
+  "description": "string",
+  "metadata": {}
+}
+\`\`\`
+
+## Response
+
+### Success Response (200)
+\`\`\`json
+{
+  "success": true,
+  "data": {
+    "id": "string",
+    "name": "string",
+    "createdAt": "ISO8601 timestamp"
+  }
+}
+\`\`\`
+
+### Error Responses
+
+#### 400 Bad Request
+\`\`\`json
+{
+  "success": false,
+  "error": "Invalid input parameters"
+}
+\`\`\`
+
+#### 401 Unauthorized
+\`\`\`json
+{
+  "success": false,
+  "error": "Authentication required"
+}
+\`\`\`
+
+#### 404 Not Found
+\`\`\`json
+{
+  "success": false,
+  "error": "Resource not found"
+}
+\`\`\`
+
+## Validation Rules
+
+- \`name\`: 3-100 characters, alphanumeric + spaces
+- \`description\`: Max 500 characters
+- \`metadata\`: Valid JSON object
+
+## Examples
+
+### cURL Example
+\`\`\`bash
+curl -X POST https://api.example.com/api/v1/resource \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer YOUR_TOKEN" \\
+  -d '{"name": "Example", "description": "Test resource"}'
+\`\`\`
+
+### JavaScript Example
+\`\`\`javascript
+const response = await fetch('/api/v1/resource', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer ' + token
+  },
+  body: JSON.stringify({
+    name: 'Example',
+    description: 'Test resource'
+  })
+});
+\`\`\`
+
+## Testing Checklist
+
+- [ ] Validate all required parameters
+- [ ] Test with missing optional parameters
+- [ ] Verify authentication/authorization
+- [ ] Test rate limiting behavior
+- [ ] Validate error responses
+- [ ] Check response schema compliance
+`,
+        event: `# Event Contract: [Event Name]
+
+> Contract for asynchronous event
+> Version: 1.0.0
+> Last Updated: ${new Date().toISOString().split('T')[0]}
+
+## Event Details
+
+- **Event Name**: \`user.created\`
+- **Topic/Channel**: \`users\`
+- **Type**: Domain Event | Integration Event | System Event
+- **Guaranteed Delivery**: Yes | No
+- **Order Guarantee**: Yes | No
+
+## Event Schema
+
+### Envelope
+\`\`\`json
+{
+  "eventId": "uuid-v4",
+  "eventType": "user.created",
+  "timestamp": "ISO8601 timestamp",
+  "version": "1.0.0",
+  "source": "user-service",
+  "data": {}
+}
+\`\`\`
+
+### Payload
+\`\`\`json
+{
+  "userId": "string (uuid)",
+  "email": "string (email format)",
+  "username": "string",
+  "createdAt": "ISO8601 timestamp",
+  "metadata": {
+    "ipAddress": "string",
+    "userAgent": "string"
+  }
+}
+\`\`\`
+
+## Event Producers
+
+- **Service**: user-service
+- **Trigger**: User registration completed
+- **Frequency**: On-demand
+
+## Event Consumers
+
+| Consumer | Purpose | SLA |
+|----------|---------|-----|
+| notification-service | Send welcome email | < 5 minutes |
+| analytics-service | Track user metrics | Best effort |
+| audit-service | Log user creation | < 1 minute |
+
+## Retry Policy
+
+- **Max Retries**: 3
+- **Backoff Strategy**: Exponential (2s, 4s, 8s)
+- **Dead Letter Queue**: Yes
+
+## Validation Rules
+
+- \`userId\`: Valid UUID v4
+- \`email\`: Valid email format, max 255 chars
+- \`username\`: 3-30 characters, alphanumeric + underscore
+
+## Example Event
+\`\`\`json
+{
+  "eventId": "123e4567-e89b-12d3-a456-426614174000",
+  "eventType": "user.created",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "version": "1.0.0",
+  "source": "user-service",
+  "data": {
+    "userId": "987e6543-e21b-12d3-a456-426614174999",
+    "email": "user@example.com",
+    "username": "johndoe",
+    "createdAt": "2024-01-15T10:30:00Z",
+    "metadata": {
+      "ipAddress": "192.168.1.1",
+      "userAgent": "Mozilla/5.0..."
+    }
+  }
+}
+\`\`\`
+
+## Testing Checklist
+
+- [ ] Validate event schema
+- [ ] Test all consumers receive event
+- [ ] Verify retry mechanism
+- [ ] Test dead letter queue
+- [ ] Validate event ordering (if required)
+- [ ] Test idempotency handling
+`,
+        schema: `# JSON Schema: [Schema Name]
+
+> JSON Schema definition
+> Version: 1.0.0
+> Last Updated: ${new Date().toISOString().split('T')[0]}
+
+## Schema Definition
+
+\`\`\`json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/schemas/resource.json",
+  "title": "Resource",
+  "description": "Represents a resource entity",
+  "type": "object",
+  "required": ["id", "name"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 100,
+      "description": "Resource name"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "Optional description"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["active", "inactive", "pending"],
+      "default": "pending",
+      "description": "Resource status"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Flexible metadata object"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Creation timestamp"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last update timestamp"
+    }
+  },
+  "additionalProperties": false
+}
+\`\`\`
+
+## Valid Example
+\`\`\`json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "Example Resource",
+  "description": "This is an example",
+  "status": "active",
+  "metadata": {
+    "category": "test",
+    "priority": 1
+  },
+  "createdAt": "2024-01-15T10:30:00Z",
+  "updatedAt": "2024-01-15T10:30:00Z"
+}
+\`\`\`
+
+## Invalid Examples
+
+### Missing Required Field
+\`\`\`json
+{
+  "description": "Missing id and name"
+}
+\`\`\`
+
+### Invalid Type
+\`\`\`json
+{
+  "id": 12345,  // Should be string
+  "name": "Example"
+}
+\`\`\`
+
+### Invalid Enum Value
+\`\`\`json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "Example",
+  "status": "invalid"  // Not in enum
+}
+\`\`\`
+
+## Validation Notes
+
+- All timestamps must be in ISO 8601 format
+- UUIDs must be valid v4 format
+- Additional properties not allowed at root level
+- Metadata object allows flexible structure
+
+## Usage
+
+### TypeScript Interface
+\`\`\`typescript
+interface Resource {
+  id: string;
+  name: string;
+  description?: string;
+  status?: 'active' | 'inactive' | 'pending';
+  metadata?: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}
+\`\`\`
+
+### Validation Example (JavaScript)
+\`\`\`javascript
+const Ajv = require('ajv');
+const ajv = new Ajv();
+const validate = ajv.compile(schema);
+
+const data = { /* your data */ };
+const valid = validate(data);
+
+if (!valid) {
+  console.log(validate.errors);
+}
+\`\`\`
+`
+      };
+      return templates[type];
+    };
+
+    // List contracts for a feature
+    this.app.get('/api/projects/:projectId/speckit/specs/:featureNumber/contracts', async (request: any, reply: any) => {
+      const { projectId, featureNumber } = request.params;
+
+      try {
+        const project = self.projectManager.getProject(projectId);
+        if (!project) {
+          return reply.code(404).send({ error: 'Project not found' });
+        }
+
+        const features = await self.getSpecKitFeatures(project.projectPath);
+        const feature = features.find(f => f.featureNumber === featureNumber);
+
+        if (!feature) {
+          return reply.code(404).send({ error: 'Feature not found' });
+        }
+
+        const contractsDir = join(feature.directoryPath, 'contracts');
+
+        if (!existsSync(contractsDir)) {
+          return { contracts: [] };
+        }
+
+        const entries = await readdir(contractsDir, { withFileTypes: true });
+        const contracts = [];
+
+        for (const entry of entries) {
+          if (entry.isFile() && entry.name.endsWith('.md')) {
+            const filePath = join(contractsDir, entry.name);
+            const content = await readFile(filePath, 'utf-8');
+
+            // Extract contract type and version from content
+            const versionMatch = content.match(/Version:\s*(\d+\.\d+\.\d+)/);
+            const typeMatch = content.match(/Contract for (.*)/i);
+
+            contracts.push({
+              name: entry.name,
+              fileName: entry.name.replace('.md', ''),
+              filePath,
+              type: typeMatch ? typeMatch[1].toLowerCase() : 'unknown',
+              version: versionMatch ? versionMatch[1] : '1.0.0',
+              size: (await stat(filePath)).size
+            });
+          }
+        }
+
+        return { contracts };
+      } catch (error: any) {
+        console.error(`Error listing contracts: ${error.message}`);
+        return reply.code(500).send({ error: `Failed to list contracts: ${error.message}` });
+      }
+    });
+
+    // Get a specific contract
+    this.app.get('/api/projects/:projectId/speckit/specs/:featureNumber/contracts/:contractName', async (request: any, reply: any) => {
+      const { projectId, featureNumber, contractName } = request.params;
+
+      try {
+        const project = self.projectManager.getProject(projectId);
+        if (!project) {
+          return reply.code(404).send({ error: 'Project not found' });
+        }
+
+        const features = await self.getSpecKitFeatures(project.projectPath);
+        const feature = features.find(f => f.featureNumber === featureNumber);
+
+        if (!feature) {
+          return reply.code(404).send({ error: 'Feature not found' });
+        }
+
+        const contractPath = join(feature.directoryPath, 'contracts', `${contractName}.md`);
+
+        if (!existsSync(contractPath)) {
+          return reply.code(404).send({ error: 'Contract not found' });
+        }
+
+        const content = await readFile(contractPath, 'utf-8');
+
+        // Extract metadata
+        const versionMatch = content.match(/Version:\s*(\d+\.\d+\.\d+)/);
+        const typeMatch = content.match(/Contract for (.*)/i);
+
+        return {
+          name: `${contractName}.md`,
+          fileName: contractName,
+          content,
+          type: typeMatch ? typeMatch[1].toLowerCase() : 'unknown',
+          version: versionMatch ? versionMatch[1] : '1.0.0',
+          filePath: contractPath
+        };
+      } catch (error: any) {
+        console.error(`Error reading contract: ${error.message}`);
+        return reply.code(500).send({ error: `Failed to read contract: ${error.message}` });
+      }
+    });
+
+    // Create or update a contract
+    this.app.put('/api/projects/:projectId/speckit/specs/:featureNumber/contracts/:contractName', async (request: any, reply: any) => {
+      const { projectId, featureNumber, contractName } = request.params;
+      const { content, contractType } = request.body as { content?: string; contractType?: 'api' | 'event' | 'schema' };
+
+      try {
+        const project = self.projectManager.getProject(projectId);
+        if (!project) {
+          return reply.code(404).send({ error: 'Project not found' });
+        }
+
+        const features = await self.getSpecKitFeatures(project.projectPath);
+        const feature = features.find(f => f.featureNumber === featureNumber);
+
+        if (!feature) {
+          return reply.code(404).send({ error: 'Feature not found' });
+        }
+
+        const contractsDir = join(feature.directoryPath, 'contracts');
+        await mkdir(contractsDir, { recursive: true });
+
+        const contractPath = join(contractsDir, `${contractName}.md`);
+
+        // If no content provided but contractType specified, use template
+        let finalContent = content;
+        if (!content && contractType) {
+          finalContent = getContractTemplate(contractType);
+        }
+
+        if (!finalContent) {
+          return reply.code(400).send({ error: 'Either content or contractType must be provided' });
+        }
+
+        await writeFile(contractPath, finalContent, 'utf-8');
+
+        return {
+          success: true,
+          message: 'Contract saved successfully',
+          filePath: contractPath,
+          name: `${contractName}.md`
+        };
+      } catch (error: any) {
+        console.error(`Error saving contract: ${error.message}`);
+        return reply.code(500).send({ error: `Failed to save contract: ${error.message}` });
+      }
+    });
+
+    // Delete a contract
+    this.app.delete('/api/projects/:projectId/speckit/specs/:featureNumber/contracts/:contractName', async (request: any, reply: any) => {
+      const { projectId, featureNumber, contractName } = request.params;
+
+      try {
+        const project = self.projectManager.getProject(projectId);
+        if (!project) {
+          return reply.code(404).send({ error: 'Project not found' });
+        }
+
+        const features = await self.getSpecKitFeatures(project.projectPath);
+        const feature = features.find(f => f.featureNumber === featureNumber);
+
+        if (!feature) {
+          return reply.code(404).send({ error: 'Feature not found' });
+        }
+
+        const contractPath = join(feature.directoryPath, 'contracts', `${contractName}.md`);
+
+        if (!existsSync(contractPath)) {
+          return reply.code(404).send({ error: 'Contract not found' });
+        }
+
+        const { unlink } = await import('fs/promises');
+        await unlink(contractPath);
+
+        return {
+          success: true,
+          message: 'Contract deleted successfully'
+        };
+      } catch (error: any) {
+        console.error(`Error deleting contract: ${error.message}`);
+        return reply.code(500).send({ error: `Failed to delete contract: ${error.message}` });
+      }
+    });
+
+    // Get contract templates
+    this.app.get('/api/projects/:projectId/speckit/contracts/templates', async (request: any, reply: any) => {
+      const { projectId } = request.params;
+
+      try {
+        const project = self.projectManager.getProject(projectId);
+        if (!project) {
+          return reply.code(404).send({ error: 'Project not found' });
+        }
+
+        return {
+          templates: [
+            {
+              type: 'api',
+              name: 'API Endpoint Contract',
+              description: 'REST API endpoint specification with request/response schemas',
+              template: getContractTemplate('api')
+            },
+            {
+              type: 'event',
+              name: 'Event Contract',
+              description: 'Asynchronous event schema with producers and consumers',
+              template: getContractTemplate('event')
+            },
+            {
+              type: 'schema',
+              name: 'JSON Schema',
+              description: 'JSON Schema definition for data validation',
+              template: getContractTemplate('schema')
+            }
+          ]
+        };
+      } catch (error: any) {
+        console.error(`Error getting contract templates: ${error.message}`);
+        return reply.code(500).send({ error: `Failed to get contract templates: ${error.message}` });
       }
     });
   }
