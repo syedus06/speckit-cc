@@ -8,7 +8,7 @@ import { ApiProvider } from '../api/api';
 import { HighlightStyles } from '../theme/HighlightStyles';
 import { DashboardStatistics } from '../pages/DashboardStatistics';
 import { SpecsPage } from '../pages/SpecsPage';
-import { FeatureSpecsPage } from '../pages/FeatureSpecsPage';
+import { FeatureSpecsPage } from '../pages/FeatureSpecsPage/FeatureSpecsPage';
 import { SteeringPage } from '../pages/SteeringPage';
 import { TasksPage } from '../pages/TasksPage';
 import { LogsPage } from '../pages/LogsPage';
@@ -29,6 +29,7 @@ import { LanguageSelector } from '../../components/LanguageSelector';
 import { I18nErrorBoundary } from '../../components/I18nErrorBoundary';
 import { ProjectDropdown } from '../components/ProjectDropdown';
 import { PageNavigationSidebar } from '../components/PageNavigationSidebar';
+import { TaskDetailsPage } from '../pages/TaskDetailsPage';
 import { ChangelogModal } from '../modals/ChangelogModal';
 
 function Header({ toggleSidebar }: { toggleSidebar: () => void }) {
@@ -277,6 +278,7 @@ function AppInner() {
                 <Route path="/speckit/edit/:featureNumber" element={<SpecKitEditorPage />} />
                 <Route path="/speckit/constitution" element={<ConstitutionEditorPage />} />
                 <Route path="/tasks" element={<TasksPage />} />
+                <Route path="/task/:taskId" element={<TaskDetailsPage />} />
                 <Route path="/logs" element={<LogsPage />} />
                 <Route path="/approvals" element={<ApprovalsPage />} />
                 <Route path="/settings" element={<SettingsPage />} />

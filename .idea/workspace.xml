@@ -5,95 +5,31 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="87aa8a72-3fe8-4b53-8b67-d193071fac4e" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/multi-server.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/dist/dashboard/multi-server.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.specify/memory/constitution.md" beforeDir="false" afterPath="$PROJECT_DIR$/.specify/memory/constitution.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.specify/templates/plan-template.md" beforeDir="false" afterPath="$PROJECT_DIR$/.specify/templates/plan-template.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.specify/templates/spec-template.md" beforeDir="false" afterPath="$PROJECT_DIR$/.specify/templates/spec-template.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.specify/templates/tasks-template.md" beforeDir="false" afterPath="$PROJECT_DIR$/.specify/templates/tasks-template.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dist/dashboard/multi-server.d.ts.map" beforeDir="false" afterPath="$PROJECT_DIR$/dist/dashboard/multi-server.d.ts.map" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dist/dashboard/multi-server.js" beforeDir="false" afterPath="$PROJECT_DIR$/dist/dashboard/multi-server.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dist/dashboard/multi-server.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/dist/dashboard/multi-server.js.map" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/arc-Dg8RQ8Bp.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/blockDiagram-68f4deed-BnAtCBCn.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/c4Diagram-15b5d702-VVtknkRc.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/channel-fv92iF9f.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/classDiagram-d40c83e7-B4iMvtHI.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/classDiagram-v2-d5a6b087-yxgGWPnz.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/clone-BtvthhRK.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/createText-d213de94-rJoSbC7x.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/edges-332bd1c7-DMSrpN2p.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/erDiagram-880f2ed8-B0JpOj4q.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/flowDb-7c981674-tdpA8PQ6.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/flowDiagram-cbd28bf7-Lqxb495_.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/flowDiagram-v2-ffc7f31a-DBZcg_ig.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/flowchart-elk-definition-36e2d292-G8_fRjng.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/ganttDiagram-04f9e578-BI5mlliL.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/gitGraphDiagram-21fc4d3e-B528BhF2.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/graph-CMcvgxgC.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/index-6079d271-B7gMaYmL.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/index-DIYnRBRL.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/index-i1fBG4fW.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/infoDiagram-4a4f5b27-bzO9mHi2.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/journeyDiagram-29694f62-BoyXEbGh.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/layout-BZiedhmu.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/line-D_j49chw.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/linear-DezxP13V.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/mindmap-definition-ac74a2e8-BdTLzz57.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/pieDiagram-421022e6-o8LkQ8Mu.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/quadrantDiagram-0957ecba-CnbX3tgJ.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/requirementDiagram-23d650b8-BeSAJ-JY.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/sankeyDiagram-23345273-B3-hxXEn.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/sequenceDiagram-17ac3bff-COquJsX6.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/stateDiagram-9c5f0230-y66Y7RMf.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/stateDiagram-v2-51a3dcff-Dz5l8XMy.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/styles-2ab5d517-Dp2Vceel.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/styles-5f03d8d2-DrQ72hM4.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/styles-edf9a4b0-DvI_8TjB.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/svgDrawCommon-3ba9043b-7JCq_uK4.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/timeline-definition-7e6b55e7-DLbi_NCx.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/dashboard/public/assets/xychartDiagram-b6496bcd-CjjNio3v.js" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/dist/dashboard/public/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/dist/dashboard/public/index.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/dashboard/multi-server.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/dashboard/multi-server.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard/speckit-routes.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/dashboard/speckit-routes.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/arc-Dg8RQ8Bp.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/blockDiagram-68f4deed-BnAtCBCn.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/c4Diagram-15b5d702-VVtknkRc.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/channel-fv92iF9f.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/classDiagram-d40c83e7-B4iMvtHI.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/classDiagram-v2-d5a6b087-yxgGWPnz.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/clone-BtvthhRK.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/createText-d213de94-rJoSbC7x.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/edges-332bd1c7-DMSrpN2p.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/erDiagram-880f2ed8-B0JpOj4q.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/flowDb-7c981674-tdpA8PQ6.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/flowDiagram-cbd28bf7-Lqxb495_.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/flowDiagram-v2-ffc7f31a-DBZcg_ig.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/flowchart-elk-definition-36e2d292-G8_fRjng.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/ganttDiagram-04f9e578-BI5mlliL.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/gitGraphDiagram-21fc4d3e-B528BhF2.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/graph-CMcvgxgC.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/index-6079d271-B7gMaYmL.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/index-DIYnRBRL.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/index-i1fBG4fW.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/infoDiagram-4a4f5b27-bzO9mHi2.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/journeyDiagram-29694f62-BoyXEbGh.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/layout-BZiedhmu.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/line-D_j49chw.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/linear-DezxP13V.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/mindmap-definition-ac74a2e8-BdTLzz57.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/pieDiagram-421022e6-o8LkQ8Mu.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/quadrantDiagram-0957ecba-CnbX3tgJ.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/requirementDiagram-23d650b8-BeSAJ-JY.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/sankeyDiagram-23345273-B3-hxXEn.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/sequenceDiagram-17ac3bff-COquJsX6.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/stateDiagram-9c5f0230-y66Y7RMf.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/stateDiagram-v2-51a3dcff-Dz5l8XMy.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/styles-2ab5d517-Dp2Vceel.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/styles-5f03d8d2-DrQ72hM4.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/styles-edf9a4b0-DvI_8TjB.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/svgDrawCommon-3ba9043b-7JCq_uK4.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/timeline-definition-7e6b55e7-DLbi_NCx.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/assets/xychartDiagram-b6496bcd-CjjNio3v.js" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/dist/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/dashboard_frontend/dist/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/src/i18n.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/dashboard_frontend/src/i18n.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/src/locales/ar.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/src/locales/de.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/src/locales/es.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/src/locales/fr.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/src/locales/it.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/src/locales/ja.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/src/locales/ko.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/src/locales/pt.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/src/locales/ru.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/src/locales/zh.json" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/src/modules/app/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/dashboard_frontend/src/modules/app/App.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/src/modules/pages/ConstitutionPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/dashboard_frontend/src/modules/pages/ConstitutionPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/src/modules/pages/FeatureSpecsPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/dashboard_frontend/src/modules/pages/FeatureSpecsPage.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/dashboard_frontend/src/modules/pages/FeatureSpecsPage.tsx" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -192,7 +128,7 @@
       <option name="presentableId" value="Default" />
       <updated>1763135805925</updated>
       <workItem from="1763135807601" duration="2145000" />
-      <workItem from="1763146198239" duration="985000" />
+      <workItem from="1763146198239" duration="4931000" />
     </task>
     <servers />
   </component>

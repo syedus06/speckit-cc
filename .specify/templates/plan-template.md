@@ -36,6 +36,7 @@
 - [ ] **Evidence-Driven Implementation** — Tests/contracts/telemetry checkpoints are defined and expected to fail prior to implementation; required tooling is captured in this plan.
 - [ ] **Human-in-the-Loop Governance** — Required approvals are identified, along with where they will be recorded (dashboard link, log ID, etc.).
 - [ ] **Transparency & Observability** — File paths, localization/telemetry needs, and dashboard metrics are called out so downstream tasks can keep artifacts in sync.
+- [ ] **Automation-Ready Artifacts** — All `.specify/` docs referenced here keep their canonical template structures (IDs, checklists, headings) so `/speckit.*` commands and dashboards parse them deterministically; deviations are captured in Complexity Tracking with remediation tasks.
 
 > **Violation Handling**: If any box remains unchecked, fill in the Complexity Tracking table below with justification before continuing.
 

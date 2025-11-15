@@ -515,7 +515,7 @@ export class MultiProjectDashboardServer {
         // Toggle task completion status
         this.app.patch('/api/projects/:projectId/specs/:featureNumber/tasks/toggle', async (request, reply) => {
             const { projectId, featureNumber } = request.params;
-            const { taskId } = request.body;
+            const { taskId, taskLine, taskDescription } = request.body;
             try {
                 const project = self.projectRegistry.getProjectContext(projectId);
                 if (!project) {
@@ -532,21 +532,70 @@ export class MultiProjectDashboardServer {
                 }
                 const tasksPath = join(spec.directoryPath, 'tasks.md');
                 let content = await fs.readFile(tasksPath, 'utf-8');
-                // Toggle task completion by finding the task ID and flipping its checkbox
+                // Toggle task completion by finding the specific task entry
                 const lines = content.split('\n');
                 let modified = false;
-                for (let i = 0; i < lines.length; i++) {
-                    const line = lines[i];
-                    // Check for both bold format **T001** and plain format T001
-                    if (line.match(/^-\s*\[(x| )\]/i) && (line.includes(`**${taskId}**`) || line.match(new RegExp(`\\[(?:x| )\\]\\s*${taskId}(?:\\s|\\[|$)`, 'i')))) {
-                        if (line.match(/\[x\]/i)) {
-                            lines[i] = line.replace(/\[x\]/i, '[ ]');
+                const toggleCheckboxSegment = (segment) => {
+                    const match = segment.match(/\[(x|X| )\]/);
+                    if (!match || match.index === undefined)
+                        return null;
+                    const replacement = match[0].toLowerCase() === '[x]' ? '[ ]' : '[x]';
+                    return `${segment.slice(0, match.index)}${replacement}${segment.slice(match.index + match[0].length)}`;
+                };
+                const normalizedTaskLine = taskLine?.replace(/\r\n/g, '\n').trim();
+                const normalizedTaskLineLower = normalizedTaskLine?.toLowerCase();
+                const normalizedDescription = taskDescription?.trim().toLowerCase();
+                if (normalizedTaskLine && normalizedTaskLineLower) {
+                    for (let i = 0; i < lines.length; i++) {
+                        const lowerLine = lines[i].toLowerCase();
+                        const snippetIndex = lowerLine.indexOf(normalizedTaskLineLower);
+                        if (snippetIndex !== -1) {
+                            const snippet = lines[i].substring(snippetIndex, snippetIndex + normalizedTaskLine.length);
+                            const toggledSnippet = toggleCheckboxSegment(snippet);
+                            if (toggledSnippet) {
+                                lines[i] = `${lines[i].slice(0, snippetIndex)}${toggledSnippet}${lines[i].slice(snippetIndex + snippet.length)}`;
+                                modified = true;
+                                break;
+                            }
                         }
-                        else {
-                            lines[i] = line.replace(/\[ \]/i, '[x]');
+                    }
+                }
+                if (!modified) {
+                    const idRegex = new RegExp(`\\b${taskId}\\b`, 'i');
+                    for (let i = 0; i < lines.length; i++) {
+                        const line = lines[i];
+                        const checkboxLine = line.match(/^-\s*\[(x| )\]/i);
+                        if (!checkboxLine)
+                            continue;
+                        const containsId = line.includes(`**${taskId}**`) || idRegex.test(line);
+                        if (!containsId)
+                            continue;
+                        if (normalizedDescription && !line.toLowerCase().includes(normalizedDescription)) {
+                            continue;
                         }
-                        modified = true;
-                        break;
+                        const lowerLine = line.toLowerCase();
+                        const idIndex = lowerLine.indexOf(taskId.toLowerCase());
+                        if (idIndex !== -1) {
+                            const beforeId = line.slice(0, idIndex);
+                            const checkboxMatches = [...beforeId.matchAll(/\[(x|X| )\]/g)];
+                            const targetMatch = checkboxMatches.pop();
+                            if (targetMatch && targetMatch.index !== undefined) {
+                                const checkboxText = targetMatch[0];
+                                const replacement = checkboxText.toLowerCase() === '[x]' ? '[ ]' : '[x]';
+                                const startIndex = targetMatch.index;
+                                lines[i] = `${line.slice(0, startIndex)}${replacement}${line.slice(startIndex + checkboxText.length)}`;
+                                modified = true;
+                                break;
+                            }
+                        }
+                        if (!modified) {
+                            const toggledLine = toggleCheckboxSegment(line);
+                            if (toggledLine) {
+                                lines[i] = toggledLine;
+                                modified = true;
+                                break;
+                            }
+                        }
                     }
                 }
                 if (!modified) {

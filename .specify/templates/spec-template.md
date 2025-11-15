@@ -5,6 +5,10 @@
 **Status**: Draft  
 **Input**: User description: "$ARGUMENTS"
 
+> **Template Integrity Reminder**: Keep all headings, numbering, and checklist structures intact.
+> Expand the template by duplicating sections instead of deleting canonical markers so
+> `/speckit.*` commands, dashboards, and MCP clients can parse the spec deterministically.
+
 ## User Scenarios & Testing *(mandatory)*
 
 <!--

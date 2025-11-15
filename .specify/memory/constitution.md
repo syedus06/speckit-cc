@@ -1,8 +1,8 @@
 <!--
 Sync Impact Report:
-- Version change: 0.0.0 → 1.0.0
-- Modified principles: Initial adoption (all principles new)
-- Added sections: Operational Standards; Development Workflow & Quality Gates
+- Version change: 1.0.0 → 1.1.0
+- Modified principles: Added VI. Automation-Ready Artifacts (new principle)
+- Added sections: Development Workflow step for Template Integrity & Automation Hooks
 - Removed sections: None
 - Templates requiring updates: ✅ .specify/templates/plan-template.md, ✅ .specify/templates/spec-template.md, ✅ .specify/templates/tasks-template.md
 - Follow-up TODOs: None
@@ -37,26 +37,33 @@ Rationale: Aligns AI+human collaboration with the MCP approval lifecycle and avo
 - Any feature exposing UI/UX MUST define required telemetry, logging, and localization artifacts within the plan/tasks deliverables.
 Rationale: A transparent system ensures multi-interface parity (dashboard, VSCode, CLI) and simplifies troubleshooting.
 
+### VI. Automation-Ready Artifacts
+- `.specify/` documents must preserve their canonical template structures (IDs, headings, checklists, tables) so `/speckit.*` commands, MCP clients, and dashboards can parse them deterministically.
+- Manual edits to generated documents must keep machine cues intact; if a change breaks structure, document the reason under Complexity Tracking with remediation tasks.
+Rationale: The MCP server, dashboard, and VSCode extension depend on consistent formatting to synchronize specs, plans, and tasks without human rework.
+
 ## Operational Standards
 
 - All constitutional artifacts reside under `.specify/`; repo-level docs (README, docs/*.md) must reference this location when describing the workflow.
 - Plans must enumerate tooling context (language, dependencies, testing stack, target platform) so automated commands can scaffold correctly.
 - Implementation logs, approvals, and dashboard metrics must reference canonical task IDs from `tasks.md` to guarantee traceability.
 - Localization-ready features must note required locales (the product ships in 11 languages) and call out missing translations as TODO items in specs.
+- Command outputs (`/speckit.plan`, `/speckit.tasks`, `/speckit.checklist`, etc.) are stored verbatim; adjustments sit below the generated block with rationale so parsers remain stable.
 
 ## Development Workflow & Quality Gates
 
 1. **Constitution Check (Phase 0):** Validate that the planned work respects every principle (spec-first, slice independence, evidence coverage, approvals, observability). Document any intentional violation in the Complexity Tracking table before continuing.
 2. **Plan Completion (Phase 0 → 1):** Populate the technical context, structure decision, and constitution gates before running `/speckit.tasks`. Missing information halts automation.
-3. **Task Generation (Phase 2):** Organize tasks strictly by user story with `[Story]` labels; tests (if requested) must be enumerated ahead of implementation steps.
-4. **Execution:** For each story, write/confirm failing evidence, implement, capture logs, then update approvals/dashboard entries.
-5. **Review & Traceability:** PRs and approvals must link to plan sections, task IDs, and evidence artifacts so auditors can re-run or verify outcomes quickly.
+3. **Template Integrity & Automation Hooks:** Before moving past Phase 1, ensure spec, plan, and research documents retain their template headings, IDs, and tables; annotate deviations plus remediation tasks so `/speckit.*` commands and dashboards remain trustworthy.
+4. **Task Generation (Phase 2):** Organize tasks strictly by user story with `[Story]` labels; tests (if requested) must be enumerated ahead of implementation steps.
+5. **Execution:** For each story, write/confirm failing evidence, implement, capture logs, then update approvals/dashboard entries.
+6. **Review & Traceability:** PRs and approvals must link to plan sections, task IDs, and evidence artifacts so auditors can re-run or verify outcomes quickly.
 
 ## Governance
 
 - The constitution supersedes ad-hoc conventions. Reviewers must block work that violates any principle without an approved Complexity Tracking entry.
 - Amendments require: (1) proposal referencing impacted sections, (2) approval recorded in the dashboard, (3) version bump according to semantic rules (MAJOR for breaking/removals, MINOR for new principles/sections, PATCH for clarifications).
 - Ratification history is immutable. `RATIFICATION_DATE` captures first adoption; `LAST_AMENDED_DATE` captures the latest approved change.
-- Compliance reviews occur at spec creation, before task generation, and prior to release. Non-compliance must be documented with remediation tasks.
+- Compliance reviews occur at spec creation, before task generation, and prior to release. Non-compliance—including template corruption or broken automation hooks—must be documented with remediation tasks.
 
-**Version**: 1.0.0 | **Ratified**: 2025-11-11 | **Last Amended**: 2025-11-11
+**Version**: 1.1.0 | **Ratified**: 2025-11-11 | **Last Amended**: 2025-11-15

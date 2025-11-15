@@ -20,6 +20,7 @@ description: "Task list template for feature implementation"
 - **[Story]**: Which user story this task belongs to (e.g., US1, US2, US3)
 - Include exact file paths in descriptions
 - Reference evidence checkpoints (tests/contracts/logging) before describing the implementation work
+- **Automation Integrity**: Preserve this exact format (IDs, `[Story]` tags, checkboxes). If edits require a different structure, explain why and describe remediation tasks so `/speckit.tasks` outputs remain machine-readable.
 
 ## Path Conventions
 
